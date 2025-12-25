@@ -162,143 +162,139 @@ def focus_vscode():
 # PRISM_SCENE分析に必要なデータの自動取得実行
 #====================================================
 
-if __name__ == '__main__':
+print(Fore.GREEN)
+print('====================================================')
+print('  PRISM_SCENE分析に必要なデータの自動取得')
+print('====================================================')
+print(Style.RESET_ALL)
+print('PRISM_SCENE分析に必要なデータを自動取得します。')
 
-    print(Fore.GREEN)
-    print('====================================================')
-    print('  分析に必要なデータの自動取得')
-    print('====================================================')
-    print(Style.RESET_ALL)
-    print('PRISM_SCENE分析に必要なデータを自動取得します。')
+# アーカイブフォルダの設定
+race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
+# 作業用フォルダの設定
+work_dir = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/'
 
-    # アーカイブフォルダの設定
-    race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
-    # 作業用フォルダの設定
-    work_dir = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/'
+# アーカイブフォルダがまだ存在していない場合、アーカイブフォルダを作成
+if not os.path.exists(race_dir):
+    os.makedirs(race_dir)
 
-    # アーカイブフォルダがまだ存在していない場合、アーカイブフォルダを作成
-    if not os.path.exists(race_dir):
-        os.makedirs(race_dir)
-    
-        input(f'TFJVのメイン画面で、{Fore.YELLOW}対象のレースの出馬表を開いていること{Style.RESET_ALL}を確認してください。>> Enter')
-        print('')
+    input(f'TFJVのメイン画面で、{Fore.YELLOW}対象のレースの出馬表を開いていること{Style.RESET_ALL}を確認してください。>> Enter')
+    print('')
 
-        # TFJV画面にフォーカス
-        focus_target()
+    # TFJV画面にフォーカス
+    focus_target()
 
-        # 出馬表データ取得
-        print('出馬表データ取得...')
+    # 出馬表データ取得
+    print('出馬表データ取得...')
+    smart_click('メニューバー|ファイル')
+    smart_click('テキストファイル出力')
+    smart_click('出馬表・★画面イメージ出力（CSV形式）')
+    pgui.typewrite('RaceTable.csv')
+    smart_click('ダイアログ|OKボタン')
+    smart_click('小ダイアログ|上書きボタン')
+    print('')
+
+    # 各馬実績データ取得
+    print('実績データ取得...')
+    smart_click('1番目の馬名')
+    smart_doubleclick('1番目の馬名')
+    for i in range(g.hr_num):
+        print(f' {i+1}頭目の実績データを取得しています。')
         smart_click('メニューバー|ファイル')
         smart_click('テキストファイル出力')
-        smart_click('出馬表・★画面イメージ出力（CSV形式）')
-        pgui.typewrite('RaceTable.csv')
+        smart_click('★画面イメージCSV')
+        pgui.typewrite(f'Uma{i+1}.csv')
         smart_click('ダイアログ|OKボタン')
         smart_click('小ダイアログ|上書きボタン')
-        print('')
+        if i != g.hr_num - 1:
+            smart_click('各馬実績画面|⬇︎')
+    smart_click('メニューバー|閉じる')
+    print('')
 
-        # 各馬実績データ取得
-        print('実績データ取得...')
-        smart_click('1番目の馬名')
-        smart_doubleclick('1番目の馬名')
-        for i in range(g.hr_num):
-            print(f' {i+1}頭目の実績データを取得しています。')
-            smart_click('メニューバー|ファイル')
-            smart_click('テキストファイル出力')
-            smart_click('★画面イメージCSV')
-            pgui.typewrite(f'Uma{i+1}.csv')
-            smart_click('ダイアログ|OKボタン')
-            smart_click('小ダイアログ|上書きボタン')
-            if i != g.hr_num - 1:
-                smart_click('各馬実績画面|⬇︎')
-        smart_click('メニューバー|閉じる')
-        print('')
-
-        # 各馬血統データ取得
-        print('血統データ取得...')
-        smart_click('1番目の馬名')
-        smart_click('血統表ボタン')
-        for i in range(g.hr_num):
-            print(f' {i+1}頭目の血統データを取得しています。')
-            smart_click('血統表|出力ボタン')
-            smart_click('5大血統表・HTML形式出力')
-            pgui.typewrite(f'Blood{(i+1):02d}.html')
-            smart_click('ダイアログ|OKボタン')
-            smart_click('小ダイアログ|上書きボタン')
-            if i != g.hr_num - 1:
-                smart_click('血統表|⬇︎')
-        smart_click('メニューバー|閉じる')
-        print('')
-
-        # 調教データ取得
-        print('調教データ取得...')
-        # 坂路調教データ取得
-        print(' 坂路調教データを取得しています。')
-        smart_click('調教一覧ボタン')
-        smart_click('坂路調教一覧')
-        smart_click('調教|全馬ボタン')
-        smart_click('調教期間選択の▼')
-        smart_click('365日追加')
-        time.sleep(long_wait_time)
-        smart_click('調教|出力ボタン')
-        smart_click('ユーザー設定CSV')
-        pgui.typewrite('Hanro.csv')
+    # 各馬血統データ取得
+    print('血統データ取得...')
+    smart_click('1番目の馬名')
+    smart_click('血統表ボタン')
+    for i in range(g.hr_num):
+        print(f' {i+1}頭目の血統データを取得しています。')
+        smart_click('血統表|出力ボタン')
+        smart_click('5大血統表・HTML形式出力')
+        pgui.typewrite(f'Blood{(i+1):02d}.html')
         smart_click('ダイアログ|OKボタン')
         smart_click('小ダイアログ|上書きボタン')
-        time.sleep(wait_time)
-        smart_click('メニューバー|閉じる')
+        if i != g.hr_num - 1:
+            smart_click('血統表|⬇︎')
+    smart_click('メニューバー|閉じる')
+    print('')
 
-        # CW調教データ取得
-        print(' CW調教データを取得しています。')
-        smart_click('調教一覧ボタン')
-        smart_click('ウッドC調教一覧')
-        smart_click('調教|全馬ボタン')
-        smart_click('調教期間選択の▼')
-        smart_click('365日追加')
-        time.sleep(long_wait_time)
-        smart_click('調教|出力ボタン')
-        smart_click('ユーザー設定CSV')
-        pgui.typewrite('CW.csv')
-        smart_click('ダイアログ|OKボタン')
-        smart_click('小ダイアログ|上書きボタン')
-        time.sleep(wait_time)
-        smart_click('メニューバー|閉じる')
+    # 調教データ取得
+    print('調教データ取得...')
+    # 坂路調教データ取得
+    print(' 坂路調教データを取得しています。')
+    smart_click('調教一覧ボタン')
+    smart_click('坂路調教一覧')
+    smart_click('調教|全馬ボタン')
+    smart_click('調教期間選択の▼')
+    smart_click('365日追加')
+    time.sleep(long_wait_time)
+    smart_click('調教|出力ボタン')
+    smart_click('ユーザー設定CSV')
+    pgui.typewrite('Hanro.csv')
+    smart_click('ダイアログ|OKボタン')
+    smart_click('小ダイアログ|上書きボタン')
+    time.sleep(wait_time)
+    smart_click('メニューバー|閉じる')
 
-        focus_vscode()
+    # CW調教データ取得
+    print(' CW調教データを取得しています。')
+    smart_click('調教一覧ボタン')
+    smart_click('ウッドC調教一覧')
+    smart_click('調教|全馬ボタン')
+    smart_click('調教期間選択の▼')
+    smart_click('365日追加')
+    time.sleep(long_wait_time)
+    smart_click('調教|出力ボタン')
+    smart_click('ユーザー設定CSV')
+    pgui.typewrite('CW.csv')
+    smart_click('ダイアログ|OKボタン')
+    smart_click('小ダイアログ|上書きボタン')
+    time.sleep(wait_time)
+    smart_click('メニューバー|閉じる')
 
-        # 出馬表データ（ファイル名：Race_Table.csv）をアーカイブフォルダにコピー
-        shutil.copy(f'{work_dir}RaceInfo.csv', race_dir)
-        shutil.copy(f'{work_dir}RaceTable.csv', race_dir)
-        # 出走頭数の取得
-        df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
-        g.hr_num = len(df_race_table)
-        # 各馬実績データと血統データを作業フォルダーにコピー
-        for i in range(g.hr_num):
-            shutil.copy(f'{work_dir}Uma{i+1}.csv', race_dir)
-            shutil.copy(f'{work_dir}Blood{(i+1):02d}.html', race_dir)
-        # 調教データと血統データを作業フォルダーにコピー    
-        shutil.copy(f'{work_dir}Hanro.csv', race_dir)
-        shutil.copy(f'{work_dir}CW.csv', race_dir)
+    focus_vscode()
 
-        print(Fore.YELLOW)
-        print('今回のレースに必要な全てのデータをTFJVから取得しました。')
-        print(Style.RESET_ALL)
+    # 出馬表データ（ファイル名：Race_Table.csv）をアーカイブフォルダにコピー
+    shutil.copy(f'{work_dir}RaceInfo.csv', race_dir)
+    shutil.copy(f'{work_dir}RaceTable.csv', race_dir)
+    # 出走頭数の取得
+    df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
+    g.hr_num = len(df_race_table)
+    # 各馬実績データと血統データを作業フォルダーにコピー
+    for i in range(g.hr_num):
+        shutil.copy(f'{work_dir}Uma{i+1}.csv', race_dir)
+        shutil.copy(f'{work_dir}Blood{(i+1):02d}.html', race_dir)
+    # 調教データと血統データを作業フォルダーにコピー    
+    shutil.copy(f'{work_dir}Hanro.csv', race_dir)
+    shutil.copy(f'{work_dir}CW.csv', race_dir)
 
-    # 既にアーカイブフォルダに保存済みデータがある場合    
-    else:
-        # アーカイブフォルダに保存されているファイルを作業用フォルダにコピー
-        shutil.copy(f'{race_dir}RaceInfo.csv', work_dir)
-        shutil.copy(f'{race_dir}RaceTable.csv', work_dir)
-        # 出走頭数の取得
-        df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
-        g.hr_num = len(df_race_table)
-        for i in range(g.hr_num):
-            shutil.copy(f'{race_dir}Uma{i+1}.csv', work_dir)
-            shutil.copy(f'{race_dir}Blood{(i+1):02d}.html', work_dir)
-        shutil.copy(f'{race_dir}Hanro.csv', work_dir)
-        shutil.copy(f'{race_dir}CW.csv', work_dir)
+    print(Fore.YELLOW)
+    print('PRISM_SCENE分析に必要な全てのデータをTFJVから取得しました。')
+    print(Style.RESET_ALL)
 
-        print(Fore.YELLOW)
-        print('今回のレースに必要なデータをアーカイブフォルダから取得しました。')
-        print(Style.RESET_ALL)
+# 既にアーカイブフォルダに保存済みデータがある場合    
+else:
+    # アーカイブフォルダに保存されているファイルを作業用フォルダにコピー
+    shutil.copy(f'{race_dir}RaceInfo.csv', work_dir)
+    shutil.copy(f'{race_dir}RaceTable.csv', work_dir)
+    # 出走頭数の取得
+    df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
+    g.hr_num = len(df_race_table)
+    for i in range(g.hr_num):
+        shutil.copy(f'{race_dir}Uma{i+1}.csv', work_dir)
+        shutil.copy(f'{race_dir}Blood{(i+1):02d}.html', work_dir)
+    shutil.copy(f'{race_dir}Hanro.csv', work_dir)
+    shutil.copy(f'{race_dir}CW.csv', work_dir)
 
-
+    print(Fore.YELLOW)
+    print('PRISM_SCENE分析に必要なデータをアーカイブフォルダから取得しました。')
+    print(Style.RESET_ALL)
