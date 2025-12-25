@@ -126,8 +126,8 @@ def PRISM_B_Analysis(race_table_df, horse_records_df, df_cw, df_hanro, target_ra
 # PRISM_BからPRISM_RGBへの統合（最終偏差値算出コード）
 #====================================================
 
-def Calculate_PRISM_RGB(prism_rg_df, training_stats_df):
-    df_b = training_stats_df.copy()
+def Calculate_PRISM_RGB(prism_rg_df, prism_b_df):
+    df_b = prism_b_df.copy()
     
     # --- 指標算出 ---
     for mode in ['CW', '坂路']:
