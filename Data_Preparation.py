@@ -44,45 +44,11 @@ def Race_Table_Preparation ():
     g.hr_num = len(race_table_df)
 
     # 必要なカラム抽出とカラム名修正
-    race_table_df = race_table_df[['枠番', '番', '  馬名', '性別', '年齢', '騎手', '斤量', '馬体重', '増減', '所属', '調教師', ' 馬主', ' 生産者', '毛色', ' 単勝']]
-    race_table_df = race_table_df.rename(columns = {'  馬名':'馬名', ' 単勝':'単勝'})
-    race_table_df['人気'] = '' 
-
-    # オッズ、馬体重が未発表の場合のデータ整形
-    ensure_columns = ['単勝', '馬体重', '増減']
-    data_opt = ''
-    for column in ensure_columns:
-        if not column in race_table_df.columns:
-            race_table_df[column] = '未'
-            data_opt = data_opt + column + '無し '
-        else:
-            data_opt = True
-    g.data_opt = data_opt
-
-    # 単勝オッズの数値化と人気の取り込み
-    col_tansho = race_table_df.columns.get_loc('単勝')
-    col_ninki = race_table_df.columns.get_loc('人気')
-
-    if race_table_df.iloc[1,col_tansho] == '未':
-        race_table_df['人気'] = '未' 
-    else:
-        # 出走取消の馬がいた場合、単勝オッズを100000に変換してエラーを回避
-        Cancel_hr = race_table_df['単勝'].str.contains('取消し')
-        race_table_df.loc[Cancel_hr, '単勝'] = 1000000
-        # Cancel_hr_name = race_table_df[Cancel_hr]['馬名']
-        # race_table_df = race_table_df[~race_table_df['単勝'].str.contains('取消し')]
-        race_table_df['単勝'] = race_table_df['単勝'].astype(float)
-        race_table_df = race_table_df.sort_values('単勝', ascending=True)
-        for i in range(len(race_table_df)):
-            race_table_df.iloc[i, col_ninki] = i + 1
-        race_table_df = race_table_df.sort_values('番', ascending=True)
+    race_table_df = race_table_df[['枠番', '番', '  馬名', '性別', '年齢', '騎手', '斤量', '所属', '調教師', ' 馬主', ' 生産者', '毛色']]
+    race_table_df = race_table_df.rename(columns = {'  馬名':'馬名'})
 
     # 欠損値nanを０に置換（主に「増減」）
     race_table_df = race_table_df.fillna(0)
-
-    if data_opt:
-        race_table_df['馬体重'] = race_table_df['単勝'].astype(int)
-        race_table_df['増減'] = race_table_df['単勝'].astype(int)
 
     # 厩舎の表記を変更（ベクトル化・高速）
     mapping = {'(栗)': '栗東', '(美)': '美浦', '[地]': '地方', '[外]': '海外'}
