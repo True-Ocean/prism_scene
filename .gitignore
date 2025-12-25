@@ -1,0 +1,22 @@
+# 機密情報 (APIキーなど)
+.env
+
+# Google Cloudの認証キー (JSONファイル)
+*.json
+
+# Python仮想環境
+.venv/
+venv/
+env/
+ENV/
+
+# キャッシュ・一時ファイル
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# その他、Gitに入れたくないフォルダやファイル
+Draft_ipynb/
+Media_files/
+.DS_Store
