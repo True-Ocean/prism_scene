@@ -15,8 +15,6 @@ import time
 
 # グローバル変数用モジュール
 import My_Global as g
-# レース情報取得モジュール
-import PRISM_SCENE_Menu
 
 # PostgreSQLの接続設定
 dotenv_path = '/Users/trueocean/Desktop/Python_Code/Project_Key/.env'
@@ -31,44 +29,6 @@ connection_config = {
     }
 
 engine = create_engine('postgresql://{user}:{password}@{host}:{port}/{database}'.format(**connection_config))
-
-
-#====================================================
-# レース情報の取得
-#====================================================
-
-def Race_Info_Getter():
-
-    # My_Globalモジュールに保存された変数を取得
-    race_date = g.race_date
-    stadium = g.stadium
-    r_num = g.r_num
-    race_name = g.race_name
-    td = g.td
-    distance = g.distance
-    if distance != '':
-        distance = int(distance)
-    age = g.age
-    clas = g.clas
-    cond = g.cond
-
-    exe_opt = g.exe_opt
-    exe_opt = int(exe_opt)
-
-    # AI_opt = g.AI_opt
-    # scr_opt = g.scr_opt
-
-    # データフレームにレース情報を格納
-    col = ['日付', '場所', 'R番号', '年齢限定', 'クラス名', 'TD', '距離', '馬場状態', 'レース名']
-    r_info = [[race_date, stadium, r_num, age, clas, td, distance, cond, race_name]]
-
-    # データフレームの最終化
-    RaceInfo_df = pd.DataFrame(data = r_info, index = ['レース情報'], columns = col)
-
-    # PostgreSQLに保存
-    RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace')
-
-    return RaceInfo_df
 
 
 #====================================================
@@ -237,14 +197,36 @@ def Horse_Records_Preparation(race_table_df):
 
     return HorseRecords_df
 
+
+#====================================================
+# 調教データの取得
+#====================================================
+
+def Training_Data_Preparation():
+
+    # 調教データ読み込み
+    df_hanro = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/Hanro.csv', encoding = 'cp932')
+    df_cw = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/CW.csv', encoding = 'cp932')
+
+    # 坂路調教データの整形
+    df_hanro = df_hanro.rename(columns = {'馬番/仮番(出馬表モード時のみ)':'番'})
+    df_hanro['番'] = df_hanro['番'].astype(int)
+    df_hanro = df_hanro[['年月日', '時刻', '番','馬名', '性別', '年齢', '調教師','Time1','Time2','Time3','Time4','Lap4','Lap3','Lap2','Lap1']]
+
+    # CW調教データの整形
+    df_cw = df_cw.rename(columns = {'馬番/仮番(出馬表モード時のみ)':'番'})
+    df_cw['番'] = df_cw['番'].astype(int)
+    df_cw = df_cw[['年月日', '時刻', '番','馬名', '性別', '年齢', '調教師','所属', '回り', '10F', '9F', '8F', '7F', '6F', '5F', '4F', '3F', '2F', '1F',
+                'Lap9', 'Lap8', 'Lap7', 'Lap6', 'Lap5', 'Lap4', 'Lap3', 'Lap2', 'Lap1',]]
+
+    return df_hanro, df_cw
+
+
 #====================================================
 # 上記の各関数の実行（4つの基本データフレームの取得）
 #====================================================
 
 if __name__ == '__main__':
-
-    # 1.レース情報の取得
-    RaceInfo_df = Race_Info_Getter()
 
     # 出馬表の取得
     RaceTable_df = Race_Table_Preparation()
@@ -252,8 +234,11 @@ if __name__ == '__main__':
     # 全出走馬のレース実績データの取得
     HorseRecords_df = Horse_Records_Preparation(RaceTable_df)
 
+    # 調教データの取得
+    df_hanro, df_cw = Training_Data_Preparation()
 
-    # PRISM分析に必要となる3つの基本DFをPostgreSQLに保存
-    RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace')
+    # PRISM分析に必要となるDFをPostgreSQLに保存
     RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace')
     HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace')
+    df_hanro.to_sql('Hanro', con=engine, if_exists = 'replace')
+    df_cw.to_sql('CW', con=engine, if_exists = 'replace')
