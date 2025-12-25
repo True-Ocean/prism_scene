@@ -5,16 +5,34 @@
 #=============================================================
 
 # ライブラリの準備
+import os
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 import time
 import pandas as pd
 import pyautogui as pgui
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
 from colorama import Fore, Back, Style
 
 # モジュールの準備
 import My_Global as g
+
+# PostgreSQLの接続設定
+dotenv_path = '/Users/trueocean/Desktop/Python_Code/Project_Key/.env'
+load_dotenv(dotenv_path)
+
+connection_config = {
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASS'),
+    'host': os.getenv('DB_HOST'),
+    'port': os.getenv('DB_PORT'),
+    'database': os.getenv('DB_NAME')
+    }
+
+engine = create_engine('postgresql://{user}:{password}@{host}:{port}/{database}'.format(**connection_config))
+
 
 # PRISM_SCENEメニュー画面のクラス
 class RaceInfoApp:
@@ -203,15 +221,18 @@ if __name__ == '__main__':
     print(Style.RESET_ALL)
     print('これからPRISM_SCENE分析を実施します。')
     print('メニュー画面にレース情報をインプットしてください。')
+    
     PRISM_SCENE_Menu()
 
     # データフレームにレース情報を格納
     col = ['日付', '競馬場', 'R番号', '年齢', 'クラス', 'TD', '距離', '状態', 'レース名']
     r_info = [[g.race_date, g.stadium, g.r_num, g.age, g.clas, g.td, g.distance, g.cond, g.race_name]]
-    df_Race_Info = pd.DataFrame(data = r_info, index = ['レース情報'], columns = col)
+    RaceInfo_df = pd.DataFrame(data = r_info, index = ['レース情報'], columns = col)
 
     # csvとして保存
-    df_Race_Info.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceInfo.csv', index=False, encoding="utf-8")
+    RaceInfo_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceInfo.csv', index=False, encoding="utf-8")
+    # postgreSQLに保存
+    RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace')
 
     print(Fore.YELLOW)
     print('今回のレース情報を取得しました。')
