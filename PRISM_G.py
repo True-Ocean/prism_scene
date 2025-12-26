@@ -302,7 +302,7 @@ def PRISM_RG_Visualization(prism_rg_df):
     # layout="constrained" を使用（現在の推奨記法）
     fig, axes = plt.subplots(2, 2, figsize=(20, 18), layout="constrained")
 
-    race_title = f"{g.stadium} {g.distance}m ({g.cond})"
+    race_title = f"{g.stadium} {g.td} {g.distance}m {g.race_name} ({g.cond})"
     
     # y座標の指定を消し、fontsizeを調整。
     # layout="constrained" が自動でグラフを下げてタイトル用のスペースを作ります。
