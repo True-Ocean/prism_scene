@@ -237,7 +237,6 @@ if g.exe_opt in [2, 4]:
 
     print(Fore.YELLOW)
     print('PRISM_B分析が完了しました。')
-    print(Style.RESET_ALL)
 
     # PRISM_Bのビジュアル化実行
     PRISM_B.PRISM_B_Visualization(PRISM_B_df, RaceTable_df)
