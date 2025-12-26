@@ -22,24 +22,31 @@ import My_Global as g
 #====================================================
 
 def get_target_rect():
-    """TARGET (TFJV.EXE) のウィンドウ位置とサイズを取得する"""
-    window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
     
-    for window in window_list:
-        owner_name = window.get('kCGWindowOwnerName', '')
+    while True:
+        window_list = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
         
-        # アプリ名が TFJV.EXE のものを探す
-        if 'TFJV.EXE' in owner_name:
-            bounds = window['kCGWindowBounds']
-            # x, y, width, height
-            rect = (
-                int(bounds['X']),
-                int(bounds['Y']),
-                int(bounds['Width']),
-                int(bounds['Height'])
-            )
-            return rect
-    return None
+        target_window = None
+        for window in window_list:
+            owner_name = window.get('kCGWindowOwnerName', '')
+            
+            # アプリ名が TFJV.EXE のものを探す
+            if 'TFJV.EXE' in owner_name:
+                bounds = window['kCGWindowBounds']
+                target_window = (
+                    int(bounds['X']),
+                    int(bounds['Y']),
+                    int(bounds['Width']),
+                    int(bounds['Height'])
+                )
+                break # 見つかったらループを抜ける
+        
+        if target_window:
+            return target_window
+        
+        # --- 見つからなかった場合の処理 ---
+        print(Fore.RED + "\n[Error] TFJV.EXEが見つかりません。" + Style.RESET_ALL)
+        input("TFJVの画面を表示させてから、Enterキーを押してください（再試行します）...")
 
 # TFJVウィンドウの座標取得
 original_x, original_y, original_w, original_h = get_target_rect()
@@ -185,6 +192,7 @@ def Data_Getter():
         focus_vscode()
         input(f'TFJVのメイン画面で、{Fore.YELLOW}対象のレースの出馬表を開いていること{Style.RESET_ALL}を確認してください。>> Enter')
         print('')
+        time.sleep(wait_time)
         focus_target()
 
         # TFJVウィンドウの座標取得
@@ -203,8 +211,12 @@ def Data_Getter():
         smart_click('小ダイアログ|上書きボタン')
         print('')
 
-        # # デバグ用（マウス自動操作を止める）
-        # input('>>')
+        # デバグ用（マウス自動操作を止める）
+        focus_vscode()
+        input('>>')
+        time.sleep(wait_time)
+        focus_target()
+
 
         # 各馬実績データ取得
         print('実績データ取得...')
