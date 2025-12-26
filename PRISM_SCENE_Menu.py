@@ -12,6 +12,11 @@ from tkinter import messagebox
 import time
 import pandas as pd
 import pyautogui as pgui
+
+import warnings
+# マッチするメッセージの警告を無視
+warnings.filterwarnings("ignore", message=".*IMKCFRunLoopWakeUpReliable.*")
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from colorama import Fore, Back, Style
@@ -86,8 +91,7 @@ class RaceInfoApp:
         self.var_td = StringVar()
         self.var_distance = StringVar()
         self.var_cond = StringVar()
-        self.var_exe_opt = IntVar(value=0)
-        self.var_scr_opt = BooleanVar(value=True)
+        self.var_exe_opt = IntVar(value=4)
 
     def create_widgets(self):
         """画面レイアウトの構築"""
@@ -131,21 +135,12 @@ class RaceInfoApp:
             ttk.Combobox(f2, textvariable=var, values=vals, width=8, justify='center').grid(row=1, column=i, padx=3)
 
         # --- Section 3: 分析・実行オプション ---
-        # 横に並べるためにサブフレームを作成
-        option_frame = ttk.Frame(container)
-        option_frame.grid(row=2, column=0, sticky='ew', pady=5)
-        option_frame.columnconfigure(0, weight=3)
-        option_frame.columnconfigure(1, weight=1)
+        f3 = ttk.Labelframe(container, text=' 分析・実行オプション選択 ', padding=10)
+        f3.grid(row=2, column=0, sticky='ew', pady=5)
 
-        f3 = ttk.Labelframe(option_frame, text=' 分析データ取得設定 ', padding=10)
-        f3.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
-        opts = [('全データ取得', 0), ('馬体重・オッズ優先', 1), ('オッズのみ', 2), ('ローカルデータのみ', 3)]
+        opts = [ ('1. データ取得のみ実行', 1), ('2. PRISM分析のみ実行（既にデータ取得済であること！）', 2), ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), ('4. 全モジュール一括実行（データ取得・PRISM分析・SCENE分析）', 4)]
         for i, (txt, val) in enumerate(opts):
             ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
-
-        f4 = ttk.Labelframe(option_frame, text=' 環境設定 ', padding=10)
-        f4.grid(row=0, column=1, sticky='nsew')
-        ttk.Checkbutton(f4, text='デュアルモニター', variable=self.var_scr_opt).pack(anchor=W, pady=5)
 
         # --- Section 4: 実行ボタン ---
         btn_frame = ttk.Frame(container, padding="0 10 0 0")
@@ -177,20 +172,26 @@ class RaceInfoApp:
         g.clas = self.var_clas.get()
         g.cond = self.var_cond.get()
         g.exe_opt = self.var_exe_opt.get()
-        g.scr_opt = self.var_scr_opt.get()
         g.filename = f"{g.race_date}{g.stadium}{g.r_num}"
 
-        self.app.quit()
+        # --- 【重要】ここから確実に消すための処理 ---
+        # まずウィンドウを隠す
         self.app.withdraw()
-        self.app.update_idletasks()
+
+        # OSに「隠した」ことを認識させるために強制更新
+        self.app.update()
+        
+        # ウィジェットを破棄
         self.app.destroy()
-        time.sleep(0.3)
+        
+        # メインループを終了
+        self.app.quit()
 
     def run(self):
-            # 1. まずウィンドウを非表示にする
+            # まずウィンドウを非表示にする
             self.app.withdraw()
             
-            # 2. 座標を計算するために一度情報を更新
+            # 座標を計算するために一度情報を更新
             self.app.update_idletasks()
             
             # 3. サイズを取得して中央座標を計算
@@ -199,17 +200,33 @@ class RaceInfoApp:
             x = (self.app.winfo_screenwidth() // 2) - (w // 2)
             y = (self.app.winfo_screenheight() // 2) - (h // 2)
             
-            # 4. 座標を設定
+            # 座標を設定
             self.app.geometry(f'+{x}+{y}')
             
-            # 5. ここで初めて表示させる
+            # ここで初めて表示させる
             self.app.deiconify()
             
+            # マウスを「情報を更新」ボタンに配置
+            pgui.moveTo(650, 700)
+
+            # メインループ開始
             self.app.mainloop()
 
+            # mainloopを抜けた（quitが呼ばれた）直後に、外側から確実に破棄する
+            try:
+                self.app.destroy()
+            except:
+                pass
+
+
 def PRISM_SCENE_Menu():
+    
     app = RaceInfoApp()
     app.run()
+
+    # ここで念のため確実に消えるのを待つ
+    time.sleep(1)
+
 
 if __name__ == '__main__':
 
