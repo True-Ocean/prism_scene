@@ -123,9 +123,6 @@ def RPCI_Shift_Analysis(MasterDataset_df):
     }])
     track_summary = pd.concat([track_summary, current_summary], ignore_index=True)
 
-    print(f"--- PRISM_G 馬場補正完了 ({g.cond}) ---")
-    print(f"採用範囲: {used_conds}, 補正シフト: {shift_amount:+.2f}")
-
     return track_summary, intrinsic_baselines
 
 
@@ -182,8 +179,6 @@ def PRISM_G_Analysis(prism_r_df, MasterDataset_df, race_table_df, track_summary,
                 current_rpci_std = base_s
         else:
             current_rpci_std = base_s
-        
-        print(f"INFO: データ不足のため、良馬場基準({base_m:.1f})にシフト({s_val:+.1f})と偏差補正を適用しました。")
     
     # 逃げ先行馬の頭数による動的ペースシフト
     high_epi_count = prism_r_df[prism_r_df['EPI'] >= 0.75].shape[0]
