@@ -46,35 +46,86 @@ engine = create_engine('postgresql://{user}:{password}@{host}:{port}/{database}'
 
 def RPCI_Shift_Analysis(MasterDataset_df):
     """
-    競馬場ごとに馬場状態別のRPCIシフト量と基準偏差を算出
+    g.cond（今回の馬場状態）に合わせて基準値を動的に調整し、
+    馬場状態の影響を考慮した統計値を返す。
     """
-    # 当該競馬場の芝コースデータを抽出
+    # 1. 基礎データの抽出
     place_data = MasterDataset_df[
         (MasterDataset_df['場所'] == g.stadium) & 
         (MasterDataset_df['TD'] == g.td) & 
         (MasterDataset_df['RPCI'] > 0)
     ].copy()
-    
-    # 距離ごとの「良馬場」統計
+
+    # 2. 距離ごとの「良馬場」中央値を計算（これは全ての基準点となる）
     ryo_all_dist = place_data[place_data['馬場状態'] == '良']
-    dist_stats = ryo_all_dist.groupby('距離')['RPCI'].agg(['median', 'std', 'count'])
+    distance_medians = ryo_all_dist.groupby('距離')['RPCI'].median().to_dict()
     
-    valid_stds = dist_stats[dist_stats['count'] >= 2]['std']
-    intrinsic_baselines = {
-        'median': ryo_all_dist['RPCI'].median(),
-        'std': valid_stds.median() if not valid_stds.empty else 4.0
-    }
-    
-    distance_medians = dist_stats['median'].to_dict()
+    # 3. RPCIシフト（各レースRPCI - 距離別良馬場基準）を算出
     place_data['RPCI_Diff'] = place_data.apply(
         lambda x: x['RPCI'] - distance_medians.get(x['距離'], np.nan), axis=1
     )
+
+    # 4. 今回の馬場状態（g.cond）に応じた統計母集団の決定（マージロジック）
+    MIN_SAMPLES = 10
+    cond_order = ['良', '稍', '重', '不']
+    current_idx = cond_order.index(g.cond) if g.cond in cond_order else 0
     
+    # マージ範囲の定義：[今回のみ, 前後1つ, 全馬場]
+    expansion_steps = [
+        [current_idx, current_idx],
+        [max(0, current_idx-1), min(3, current_idx+1)],
+        [0, 3]
+    ]
+
+    final_subset = pd.DataFrame()
+    used_conds = []
+
+    for step in expansion_steps:
+        target_conds = cond_order[step[0] : step[1]+1]
+        subset = place_data[place_data['馬場状態'].isin(target_conds)].dropna(subset=['RPCI_Diff'])
+        if len(subset) >= MIN_SAMPLES:
+            final_subset = subset
+            used_conds = target_conds
+            break
+    else:
+        # 万が一、全馬場でもMIN_SAMPLESに達しない場合
+        final_subset = place_data.dropna(subset=['RPCI_Diff'])
+        used_conds = cond_order
+
+    # 5. intrinsic_baselines（今回のレース基準値）の決定
+    # 良馬場基準のRPCI中央値に、今回の馬場での「平均シフト量」を加算して補正する
+    base_median = ryo_all_dist['RPCI'].median() if not ryo_all_dist.empty else 50.0
+    shift_amount = final_subset['RPCI_Diff'].mean() if not final_subset.empty else 0.0
+    
+    # 標準偏差も今回の馬場グループのものを使用
+    valid_stds = final_subset.groupby('距離')['RPCI'].std()
+    
+    intrinsic_baselines = {
+        'median': base_median + shift_amount, # 馬場状態を考慮した補正済み基準RPCI
+        'std': valid_stds.median() if not valid_stds.empty else 4.0,
+        'shift': shift_amount # どの程度馬場に引っ張られているか
+    }
+
+    # 6. track_summary の更新
+    # 全体の統計に加え、今回の分析で「採用された基準」という行を追加
     track_summary = place_data.dropna(subset=['RPCI_Diff']).groupby('馬場状態').agg({
         'RPCI_Diff': ['count', 'mean', 'median', 'std']
     }).reset_index()
     track_summary.columns = ['馬場状態', 'サンプル数', '平均シフト', '中央値シフト', '標準偏差']
     
+    # 「今回採用基準」をサマリーの最後に追加
+    current_summary = pd.DataFrame([{
+        '馬場状態': f'★今回採用({g.cond})',
+        'サンプル数': len(final_subset),
+        '平均シフト': shift_amount,
+        '中央値シフト': final_subset['RPCI_Diff'].median(),
+        '標準偏差': final_subset['RPCI_Diff'].std()
+    }])
+    track_summary = pd.concat([track_summary, current_summary], ignore_index=True)
+
+    print(f"--- PRISM_G 馬場補正完了 ({g.cond}) ---")
+    print(f"採用範囲: {used_conds}, 補正シフト: {shift_amount:+.2f}")
+
     return track_summary, intrinsic_baselines
 
 
@@ -83,29 +134,40 @@ def RPCI_Shift_Analysis(MasterDataset_df):
 #====================================================
 
 def PRISM_G_Analysis(prism_r_df, MasterDataset_df, race_table_df, track_summary, intrinsic_baselines):
-    """
-    PRISM_G 最適化版: 展開シミュレーションと環境補正の統合
-    """
     
-    # 1. 舞台設定（良馬場基準）の特定
-    course_ryo = MasterDataset_df[
+    # 1. 舞台設定の特定
+    # 「今回の馬場状態(g.cond)」での当該コースデータを直接狙う
+    course_target = MasterDataset_df[
         (MasterDataset_df['場所'] == g.stadium) & 
         (MasterDataset_df['距離'] == g.distance) & 
         (MasterDataset_df['TD'] == g.td) &
-        (MasterDataset_df['馬場状態'] == g.cond)
+        (MasterDataset_df['馬場状態'] == g.cond) # ← ここを今回の馬場にする
     ]
     
-    b_median = course_ryo['RPCI'].median() if not course_ryo.empty else intrinsic_baselines['median']
-    b_std = course_ryo['RPCI'].std() if len(course_ryo) > 1 else intrinsic_baselines['std']
-
-    # 2. 馬場状態シフトの適用
-    cond_stats = track_summary[track_summary['馬場状態'] == g.cond]
-    s_val = cond_stats['中央値シフト'].values[0] if not cond_stats.empty else 0.0
-    s_mult = (cond_stats['標準偏差'].values[0] / intrinsic_baselines['std']) if (not cond_stats.empty and not pd.isna(cond_stats['標準偏差'].values[0])) else 1.0
-
-    # レース想定RPCI分布
-    current_rpci_median = b_median + s_val
-    current_rpci_std = b_std * s_mult
+    # 2. 基準RPCIの決定（フォールバック付き）
+    if len(course_target) >= 5:
+        # 今回の馬場のデータが十分（5件以上）あれば、その実測値を使う
+        current_rpci_median = course_target['RPCI'].median()
+        current_rpci_std = course_target['RPCI'].std()
+        print(f"INFO: 当該コースの{g.cond}実測データから基準を算出しました。")
+    else:
+        # データが足りない場合は、良馬場基準 + シフト量で推測する
+        course_ryo = MasterDataset_df[
+            (MasterDataset_df['場所'] == g.stadium) & 
+            (MasterDataset_df['距離'] == g.distance) & 
+            (MasterDataset_df['TD'] == g.td) &
+            (MasterDataset_df['馬場状態'] == '良')
+        ]
+        
+        # 良のデータすらない場合は、競馬場全体の平均(intrinsic_baselines)を使う
+        base_m = course_ryo['RPCI'].median() if not course_ryo.empty else intrinsic_baselines['median']
+        base_s = course_ryo['RPCI'].std() if len(course_ryo) > 1 else intrinsic_baselines['std']
+        
+        # 前段で計算したシフト量を加算
+        s_val = intrinsic_baselines.get('shift', 0.0)
+        current_rpci_median = base_m + s_val
+        current_rpci_std = base_s # 標準偏差は一旦良をベース
+        print(f"INFO: データ不足のため、良馬場基準({base_m:.1f})に馬場シフト({s_val:+.1f})を適用しました。")
     
     # 逃げ先行馬の頭数による動的ペースシフト
     high_epi_count = prism_r_df[prism_r_df['EPI'] >= 0.75].shape[0]
@@ -122,46 +184,53 @@ def PRISM_G_Analysis(prism_r_df, MasterDataset_df, race_table_df, track_summary,
         r_score = horse['PRISM_R_Score']
         hist = MasterDataset_df[MasterDataset_df['馬名'] == name]
         
-        # 個体適性(PCI)の算出
-        is_imputed = False
-        # 修正：データが0件、または有効な統計が取れない（1件のみ）場合を考慮
+        # --- 1. 個体適性(PCI)の算出（道悪考慮型） ---
+        is_imputed = False  # ここで初期化しておくことでエラーを防ぐ
+        
         if len(hist) <= 1 or (hist['PCI'] == 0).all():
-            # 1件あるが不十分な場合、その1件のPCIを参考にしつつ、
-            # 標準偏差(sigma)は安全側に大きく見積もる（または補完モードにする）
             if len(hist) == 1:
-                # 1走だけデータがある場合：そのPCIを目標にしつつ、sigmaは広めに設定
-                ideal_pci = hist['PCI'].iloc[0]
-                sigma = 4.0  # 補完時と同じ広めの範囲
-                is_imputed = True # ガードレールを適用するためにTrueにする
+                ideal_pci, sigma, is_imputed = hist['PCI'].iloc[0], 4.0, True
             else:
                 # 0件の場合
                 ideal_pci, sigma, is_imputed = current_rpci_median, 4.0, True
         else:
-            # 2件以上ある場合（通常ロジック）
-            top_runs = hist.nsmallest(min(5, len(hist)), '着順')
-            ideal_pci = top_runs['PCI'].mean()
-            raw_sigma = top_runs['PCI'].std()
+            # 2件以上ある場合
+            target_runs = hist[hist['馬場状態'].isin(['稍', '重', '不'])] if g.cond in ['稍', '重', '不'] else hist
+            if target_runs.empty: target_runs = hist
             
-            # ここでも念のため、stdがNaN（2走だが1走分しかPCIがない等）の場合をガード
+            top_runs = target_runs.nsmallest(min(5, len(target_runs)), '着順')
+            ideal_pci = top_runs['PCI'].mean()
+            
+            raw_sigma = top_runs['PCI'].std()
             sigma = np.clip(raw_sigma if pd.notnull(raw_sigma) else 3.0, 1.5, 5.0)
-
-        # 適合度シミュレーション
+            
+        # --- 2. 適合度シミュレーション（生の確率計算） ---
+        # 全範囲（3σ）での平均適合度
         weights_full = norm.pdf(rpci_range_full, current_rpci_median, current_rpci_std)
         responses_full = np.exp(- (rpci_range_full - ideal_pci)**2 / (2 * sigma**2))
         g_avg_raw = np.sum(responses_full * weights_full) / np.sum(weights_full)
 
+        # 実効範囲（1σ）でのピークとリスク
         responses_real = np.exp(- (rpci_range_real - ideal_pci)**2 / (2 * sigma**2))
         g_peak_raw = max(g_avg_raw, np.max(responses_real))
         g_risk_raw = min(g_avg_raw, np.min(responses_real))
 
-        # ガードレール（Rスコア連動型）
-        g_floor = np.clip(0.60 + (r_score / 250), 0.65, 0.85)
-        g_ceiling = 0.95 if is_imputed else np.clip(1.02 - (sigma * 0.02), 0.88, 0.98)
+        # --- 3. レンジのスケーリング（0.88 〜 1.00 への圧縮） ---
+        scale = 0.12
+        offset = 0.88
 
-        g_avg = np.clip(g_avg_raw, g_floor, g_ceiling)
-        g_peak = np.clip(g_peak_raw, g_floor, g_ceiling)
-        g_risk = np.clip(g_risk_raw, g_floor, g_ceiling)
-        if is_imputed: g_avg = max(g_avg, 0.85)
+        g_avg_mapped = offset + (g_avg_raw * scale)
+        g_peak_mapped = offset + (g_peak_raw * scale)
+        g_risk_mapped = offset + (g_risk_raw * scale)
+
+        # --- 4. ガードレール（Rスコア連動の地力保証） ---
+        # Rスコアが50の馬で 0.88 程度の最低保証
+        g_floor = np.clip(0.86 + (r_score / 2000), 0.88, 0.92)
+        g_ceiling = 1.0 if not is_imputed else 0.95
+
+        g_avg = np.clip(g_avg_mapped, g_floor, g_ceiling)
+        g_peak = np.clip(g_peak_mapped, g_floor, g_ceiling)
+        g_risk = np.clip(g_risk_mapped, g_floor, g_ceiling)
 
         prism_g_results.append({'馬名': name, 'G_Avg': g_avg, 'G_Peak': g_peak, 'G_Risk': g_risk})
 
@@ -261,7 +330,7 @@ def PRISM_G_Visualization(PRISM_RG_df):
             color='blue', fontsize=10, ha='left', va='center', fontweight='bold')
     
     # グラフの装飾
-    plt.title(f'PRISM_G 分析  ( {g.race_date} {g.stadium} {g.td} {g.distance}m  {g.race_name} )', fontsize=16, pad=20)
+    plt.title(f'PRISM_G 分析  {g.race_date} {g.stadium} {g.td} {g.distance}m {g.race_name} ({g.cond}))', fontsize=16, pad=20)
     plt.xlabel('基礎能力（PRISM_R スコア）', fontsize=12)
     plt.ylabel('レース条件 (馬場状態・枠順・脚質・展開)適合率  %', fontsize=12)
     plt.grid(True, which='both', linestyle='--', alpha=0.4)
@@ -347,6 +416,7 @@ def PRISM_RG_Visualization(prism_rg_df):
 #====================================================
 
 if __name__ == "__main__":
+
     # 1. PRISM_R で計算された最新の偏差値データを読み込み
     # (PRISM_R_df には '馬名', 'PRISM_R_Score', 'EPI' が含まれている前提)
     PRISM_R_df = pd.read_sql(sql='SELECT * FROM "PRISM_R";', con=engine)
@@ -356,6 +426,10 @@ if __name__ == "__main__":
     RaceTable_df = pd.read_sql(sql='SELECT * FROM "RaceTable";', con=engine)
     
     # 3. PRISM_G 分析の実行
+
+    # 馬場状態検証用：良、稍、重、不のいずれかを記述して確認してください。
+    g.cond = '不'
+
     # 馬場状態のシフト分析
     track_summary, intrinsic_baselines = RPCI_Shift_Analysis(MasterDataset_df)
     
