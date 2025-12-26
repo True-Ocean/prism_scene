@@ -147,7 +147,7 @@ def PRISM_R_Analysis(prism_base_df, race_table_df):
                        bounds=[(-10.0, 0), (-np.inf, np.inf), (0, 100)])
         return res.x
 
-    # --- 修正箇所：'番' カラムと '年齢' の情報をマッピング ---
+    # --- '番' カラムと '年齢' の情報をマッピング ---
     if isinstance(race_table_df, pd.DataFrame):
         # データフレームから情報を抽出
         horse_info = race_table_df[['馬名', '番', '年齢']].to_dict('records')
@@ -276,7 +276,7 @@ def PRISM_R_Analysis(prism_base_df, race_table_df):
         if current_age >= 7: expectancy -= 0.5
         elif current_age == 3: expectancy += 0.5
 
-        # --- 修正箇所：'番' を辞書に追加 ---
+        # --- '番' を辞書に追加 ---
         final_results.append({
             '馬名': horse,
             '番': horse_num,  # ← ここに追加
