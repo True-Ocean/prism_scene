@@ -149,7 +149,6 @@ def PRISM_G_Analysis(prism_r_df, MasterDataset_df, race_table_df, track_summary,
         # 今回の馬場のデータが十分（5件以上）あれば、その実測値を使う
         current_rpci_median = course_target['RPCI'].median()
         current_rpci_std = course_target['RPCI'].std()
-        print(f"INFO: 当該コースの{g.cond}実測データから基準を算出しました。")
     else:
         # データが足りない場合は、良馬場基準 + シフト量で推測する
         course_ryo = MasterDataset_df[
@@ -166,7 +165,25 @@ def PRISM_G_Analysis(prism_r_df, MasterDataset_df, race_table_df, track_summary,
         # 前段で計算したシフト量を加算
         s_val = intrinsic_baselines.get('shift', 0.0)
         current_rpci_median = base_m + s_val
-        current_rpci_std = base_s # 標準偏差は一旦良をベース
+
+        # --- 【ここがポイント：track_summaryの活用】 ---
+        # 競馬場全体の馬場状態による標準偏差の変化率を適用する
+        # 「★今回採用」行から、今回の馬場条件下での標準偏差を取得
+        current_cond_stats = track_summary[track_summary['馬場状態'] == f'★今回採用({g.cond})']
+        
+        if not current_cond_stats.empty:
+            cond_std = current_cond_stats['標準偏差'].values[0]
+            # 良馬場の基準偏差に対して、今回の馬場グループの偏差がどう違うかを倍率で適用
+            # 欠損値でなければ、偏差の広がりを反映させる
+            if pd.notnull(cond_std) and intrinsic_baselines['std'] > 0:
+                std_multiplier = cond_std / intrinsic_baselines['std']
+                current_rpci_std = base_s * std_multiplier
+            else:
+                current_rpci_std = base_s
+        else:
+            current_rpci_std = base_s
+        
+        print(f"INFO: データ不足のため、良馬場基準({base_m:.1f})にシフト({s_val:+.1f})と偏差補正を適用しました。")
     
     # 逃げ先行馬の頭数による動的ペースシフト
     high_epi_count = prism_r_df[prism_r_df['EPI'] >= 0.75].shape[0]
@@ -427,7 +444,7 @@ if __name__ == "__main__":
     # 3. PRISM_G 分析の実行
 
     # 馬場状態検証用：良、稍、重、不のいずれかを記述して確認してください。
-    g.cond = '不'
+    g.cond = '良'
 
     # 馬場状態のシフト分析
     track_summary, intrinsic_baselines = RPCI_Shift_Analysis(MasterDataset_df)
