@@ -15,6 +15,7 @@ import numpy as np
 import math
 import datetime
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import matplotlib.patheffects as path_effects
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -79,13 +80,29 @@ def PRISM_B_Analysis(race_table_df, horse_records_df, df_cw, df_hanro, target_ra
     for df in [cw, hanro, records, race_table_df]:
         df['馬名'] = df['馬名'].astype(str).str.strip()
 
-    for df, cols in [(cw, ['6F', 'Lap1', 'Lap2']), (hanro, ['Time1', 'Lap1', 'Lap2'])]:
-        for c in cols:
-            df[c] = pd.to_numeric(df[c], errors='coerce')
+    # --- 数値変換と上限フィルタリング ---
+    # CWのクリーニング
+    cw_laps = [f'Lap{i}' for i in range(1, 7)] # Lap1~6
+    for c in ['6F'] + cw_laps:
+        cw[c] = pd.to_numeric(cw[c], errors='coerce')
+    
+    # 条件: 6F 100s以下 かつ 各Lap 20s以下
+    cw = cw[cw['6F'] <= 100].copy()
+    for lp in cw_laps:
+        cw = cw[cw[lp] <= 20]
+
+    # 坂路のクリーニング
+    hanro_laps = [f'Lap{i}' for i in range(1, 5)] # Lap1~4
+    for c in ['Time1'] + hanro_laps:
+        hanro[c] = pd.to_numeric(hanro[c], errors='coerce')
+        
+    # 条件: Time1 80s以下 かつ 各Lap 20s以下
+    hanro = hanro[hanro['Time1'] <= 80].copy()
+    for lp in hanro_laps:
+        hanro = hanro[hanro[lp] <= 20]
 
     target_horses = race_table_df['馬名'].unique()
     results = []
-    REST_THRESHOLD_DAYS = 70
 
     for horse in target_horses:
         past_history = records[(records['馬名'] == horse) & (records['datetime'] < target_date)].sort_values('datetime', ascending=False)
@@ -105,18 +122,22 @@ def PRISM_B_Analysis(race_table_df, horse_records_df, df_cw, df_hanro, target_ra
         for i, label in enumerate(labels):
             if i < len(analysis_dates):
                 ref_date = analysis_dates[i]
+                # レース前21日間の調教を対象
                 start_date = ref_date - pd.Timedelta(days=21)
                 
                 for mode, df, time_col in [('CW', cw, '6F'), ('坂路', hanro, 'Time1')]:
+                    # すでにクリーニング済みのdfから抽出
                     t_df = df[(df['馬名'] == horse) & (df['datetime'] >= start_date) & (df['datetime'] < ref_date)].copy()
+                    
                     if not t_df.empty:
-                        valid = t_df[t_df[time_col] > 0].sort_values(time_col).head(3)
-                        if not valid.empty:
-                            row_data[f'{label}_{mode}_最良'] = valid[time_col].min()
-                            row_data[f'{label}_{mode}_L1平均'] = valid['Lap1'].mean()
-                            # 最大加速幅を取得
-                            accel_series = valid['Lap2'] - valid['Lap1']
-                            row_data[f'{label}_{mode}_最大加速'] = accel_series.max()
+                        # 全体時計が良い順に最大3件取得
+                        valid = t_df.sort_values(time_col).head(3)
+                        
+                        row_data[f'{label}_{mode}_最良'] = valid[time_col].min()
+                        row_data[f'{label}_{mode}_L1平均'] = valid['Lap1'].mean()
+                        # 最大加速幅（Lap2 - Lap1）
+                        accel_series = valid['Lap2'] - valid['Lap1']
+                        row_data[f'{label}_{mode}_最大加速'] = accel_series.max()
 
         results.append(row_data)
     
@@ -364,72 +385,53 @@ plt.rcParams['axes.unicode_minus'] = False
 
 def Horse_Training_Visualization(race_table_df, df_cw, df_hanro, target_race_date):
     horse_names = race_table_df['馬名'].str.strip().unique()
-    
-    # --- 1. 横軸（期間）の設定 ---
     race_dt = pd.to_datetime(target_race_date)
-    fixed_start = race_dt - pd.Timedelta(days=14)
+    
+    # 期間の設定
     fixed_end = race_dt - pd.Timedelta(days=1)
-    date_range = pd.date_range(fixed_start, fixed_end)
-    date_to_idx = {d.strftime('%Y-%m-%d'): i for i, d in enumerate(date_range)}
-    date_labels = [d.strftime('%m/%d') for d in date_range]
+    fixed_start_14 = race_dt - pd.Timedelta(days=14)
+    fixed_start_365 = race_dt - pd.Timedelta(days=365)
 
-    # --- 2. データフィルタリング関数の定義 ---
-    def get_filtered_data(df, is_cw=False):
+    def get_filtered_data(df, start_date, is_cw=False):
         tmp = df.copy()
-        # 日付変換
         tmp['dt_eval'] = pd.to_datetime(tmp['年月日'].astype(str).str.replace(r'\.0$', '', regex=True), errors='coerce')
         
         if is_cw:
-            time_col = '6F'
-            lap_cols = [f'Lap{i}' for i in range(1, 7)]
-            time_limit = 100
+            time_col, lap_cols, time_limit = '6F', [f'Lap{i}' for i in range(1, 7)], 100
         else:
-            time_col = 'Time1'
-            lap_cols = [f'Lap{i}' for i in range(1, 5)]
-            time_limit = 80
+            time_col, lap_cols, time_limit = 'Time1', [f'Lap{i}' for i in range(1, 5)], 80
         
-        # 期間フィルタ
-        tmp = tmp[(tmp['dt_eval'] >= fixed_start) & (tmp['dt_eval'] <= fixed_end)].copy()
+        tmp = tmp[(tmp['dt_eval'] >= start_date) & (tmp['dt_eval'] <= fixed_end)].copy()
         
-        # 数値変換
         tmp[time_col] = pd.to_numeric(tmp[time_col], errors='coerce')
         for lc in lap_cols:
             tmp[lc] = pd.to_numeric(tmp[lc], errors='coerce')
         
-        # 条件除外：全体時計
         tmp = tmp[tmp[time_col] <= time_limit]
-        
-        # 【修正】各ラップを20秒以下に制限
         for lc in lap_cols:
             tmp = tmp[tmp[lc] <= 20]
             
         return tmp.dropna(subset=[time_col] + lap_cols)
 
-    # フィルタリング済みデータの取得
-    h_period = get_filtered_data(df_hanro, is_cw=False)
-    c_period = get_filtered_data(df_cw, is_cw=True)
+    # データの取得
+    h_14 = get_filtered_data(df_hanro, fixed_start_14, is_cw=False)
+    c_14 = get_filtered_data(df_cw, fixed_start_14, is_cw=True)
+    h_365 = get_filtered_data(df_hanro, fixed_start_365, is_cw=False)
+    c_365 = get_filtered_data(df_cw, fixed_start_365, is_cw=True)
 
-    # 統計・レンジ算出
-    def get_stats(df, time_col, lap_cols):
-        if df.empty: return [], [], None, None
-        times = df[time_col].tolist()
-        lap1s = df['Lap1'].tolist()
-        return times, lap1s, np.mean(times), np.mean(lap1s)
-
-    h_times, _, h_time_avg, h_lap1_avg = get_stats(h_period, 'Time1', [f'Lap{i}' for i in range(1, 5)])
-    c_times, _, c_time_avg, c_lap1_avg = get_stats(c_period, '6F', [f'Lap{i}' for i in range(1, 7)])
-
-    # レンジ決定
-    h_t_range = (min(h_times)-0.5 if h_times else 45, 80)
-    c_t_range = (min(c_times)-1.0 if c_times else 60, 100)
-    # ラップレンジは10秒〜20秒に固定
+    # 縦軸レンジ用
+    h_times_all = h_365['Time1'].tolist()
+    c_times_all = c_365['6F'].tolist()
+    h_t_range = (min(h_times_all)-0.5 if h_times_all else 45, 80)
+    c_t_range = (min(c_times_all)-1.0 if c_times_all else 60, 100)
     lap_range = (10, 20)
 
+    # 各グラフの基準線(baseline)設定
     categories = [
-        {'title': '坂路：全体(4F)時計推移', 'type': 'h_time', 'filename': './Media_files/PRISM_B_Hanro_Time.png', 'y_range': h_t_range, 'x_type': 'date', 'avg': h_time_avg},
-        {'title': '坂路：Best3_Lap構成推移', 'type': 'h_lap', 'filename': './Media_files/PRISM_B_Hanro_Lap.png', 'y_range': lap_range, 'x_type': 'lap4', 'avg': h_lap1_avg},
-        {'title': 'CW：全体(6F)時計推移', 'type': 'c_time', 'filename': './Media_files/PRISM_B_CW_Time.png', 'y_range': c_t_range, 'x_type': 'date', 'avg': c_time_avg},
-        {'title': 'CW：Best3_Lap構成推移', 'type': 'c_lap', 'filename': './Media_files/PRISM_B_CW_Lap.png', 'y_range': lap_range, 'x_type': 'lap6', 'avg': c_lap1_avg}
+        {'title': '坂路：全体(4F)時計推移(最大1年)', 'type': 'h_time', 'filename': './Media_files/PRISM_B_Hanro_Time.png', 'y_range': h_t_range, 'x_type': 'date_dynamic', 'data': h_365, 'baseline': 57.5},
+        {'title': '坂路：Best3_Lap構成推移(14日)', 'type': 'h_lap', 'filename': './Media_files/PRISM_B_Hanro_Lap.png', 'y_range': lap_range, 'x_type': 'lap4', 'data': h_14, 'baseline': 14.0},
+        {'title': 'CW：全体(6F)時計推移(最大1年)', 'type': 'c_time', 'filename': './Media_files/PRISM_B_CW_Time.png', 'y_range': c_t_range, 'x_type': 'date_dynamic', 'data': c_365, 'baseline': 82.5},
+        {'title': 'CW：Best3_Lap構成推移(14日)', 'type': 'c_lap', 'filename': './Media_files/PRISM_B_CW_Lap.png', 'y_range': lap_range, 'x_type': 'lap6', 'data': c_14, 'baseline': 13.0}
     ]
 
     for cat in categories:
@@ -437,46 +439,42 @@ def Horse_Training_Visualization(race_table_df, df_cw, df_hanro, target_race_dat
         cols = 3 
         rows = (num_horses + cols - 1) // cols
         fig, axes = plt.subplots(rows, cols, figsize=(cols * 6, rows * 4), layout="constrained")
-        fig.suptitle(f"【{target_race_date}直前14日間】 {cat['title']}", fontsize=24, fontweight='bold')
+        fig.suptitle(f"{cat['title']}", fontsize=24, fontweight='bold')
         axes_flat = axes.flatten() if num_horses > 1 else [axes]
 
         for i, horse in enumerate(horse_names):
             ax = axes_flat[i]
-            data = h_period[h_period['馬名'] == horse].copy() if cat['type'].startswith('h') else c_period[c_period['馬名'] == horse].copy()
+            data = cat['data'][cat['data']['馬名'] == horse].copy()
             
             if not data.empty:
-                data['dt_str'] = data['dt_eval'].dt.strftime('%Y-%m-%d')
-                
-                if cat['type'] in ['h_time', 'c_time']:
+                # 1. 時計推移グラフ (Time1 / 6F)
+                if cat['x_type'] == 'date_dynamic':
                     val_col = 'Time1' if cat['type'] == 'h_time' else '6F'
                     d = data.sort_values('dt_eval')
-                    x_vals = [date_to_idx[ds] for ds in d['dt_str'] if ds in date_to_idx]
-                    y_vals = [v for ds, v in zip(d['dt_str'], d[val_col]) if ds in date_to_idx]
-                    ax.plot(x_vals, y_vals, marker='o', color='royalblue', lw=2)
+                    ax.plot(d['dt_eval'], d[val_col], marker='o', markersize=4, color='royalblue', lw=1.5)
+                    
+                    # 横軸レンジ個別調整
+                    first_date = d['dt_eval'].min()
+                    ax.set_xlim(first_date - pd.Timedelta(days=1), fixed_end + pd.Timedelta(days=1))
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+                    plt.setp(ax.get_xticklabels(), rotation=45)
 
-                elif cat['type'] == 'h_lap':
-                    top3 = data.sort_values('Time1').head(3)
+                # 2. Lap構成グラフ
+                elif cat['type'] in ['h_lap', 'c_lap']:
+                    sort_col = 'Time1' if cat['type'] == 'h_lap' else '6F'
+                    num_laps = 4 if cat['type'] == 'h_lap' else 6
+                    top3 = data.sort_values(sort_col).head(3)
                     for _, row in top3.iterrows():
-                        laps = [row[f'Lap{k}'] for k in range(4, 0, -1)]
-                        ax.plot([0, 1, 2, 3], laps, marker='s', label=row['dt_eval'].strftime('%m/%d'))
+                        laps = [row[f'Lap{k}'] for k in range(num_laps, 0, -1)]
+                        ax.plot(range(num_laps), laps, marker='s', label=row['dt_eval'].strftime('%m/%d'))
 
-                elif cat['type'] == 'c_lap':
-                    top3 = data.sort_values('6F').head(3)
-                    for _, row in top3.iterrows():
-                        laps = [row[f'Lap{k}'] for k in range(6, 0, -1)]
-                        ax.plot(range(6), laps, marker='s', label=row['dt_eval'].strftime('%m/%d'))
+            # --- 全グラフ共通：固定の基準線を描画 ---
+            if cat['baseline'] is not None:
+                ax.axhline(y=cat['baseline'], color='red', linestyle='--', alpha=0.8, label=f"基準線 ({cat['baseline']}s)")
 
-            if cat['avg'] is not None:
-                ax.axhline(y=cat['avg'], color='red', linestyle='--', alpha=0.6, label='全体平均')
-
-            # 【修正】Y軸は反転せず、通常通り（下小→上大）
             ax.set_ylim(cat['y_range'][0], cat['y_range'][1])
             
-            if cat['x_type'] == 'date':
-                ax.set_xlim(-0.5, 13.5)
-                ax.set_xticks(range(0, 14, 2))
-                ax.set_xticklabels(date_labels[::2], rotation=45)
-            elif cat['x_type'] == 'lap4':
+            if cat['x_type'] == 'lap4':
                 ax.set_xticks([0, 1, 2, 3])
                 ax.set_xticklabels(['Lap4', 'Lap3', 'Lap2', 'Lap1'])
             elif cat['x_type'] == 'lap6':
