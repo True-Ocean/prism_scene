@@ -167,7 +167,6 @@ def PRISM_G_Analysis(prism_r_df, MasterDataset_df, race_table_df, track_summary,
         s_val = intrinsic_baselines.get('shift', 0.0)
         current_rpci_median = base_m + s_val
         current_rpci_std = base_s # 標準偏差は一旦良をベース
-        print(f"INFO: データ不足のため、良馬場基準({base_m:.1f})に馬場シフト({s_val:+.1f})を適用しました。")
     
     # 逃げ先行馬の頭数による動的ペースシフト
     high_epi_count = prism_r_df[prism_r_df['EPI'] >= 0.75].shape[0]
