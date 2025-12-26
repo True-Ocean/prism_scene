@@ -70,6 +70,9 @@ print('メニュー画面にレース情報をインプットしてください�
 # メニュー画面からレース情報データを取得
 PRISM_SCENE_Menu.PRISM_SCENE_Menu()
 
+# メニューダイアログが消えるのを確実に待ち、フォーカスを戻す
+#time.sleep(1.5) # PyAutoGUIが走る前に少し長めに待つ
+
 # データフレームにレース情報を格納
 col = ['日付', '競馬場', 'R番号', '年齢', 'クラス', 'TD', '距離', '状態', 'レース名']
 r_info = [[g.race_date, g.stadium, g.r_num, g.age, g.clas, g.td, g.distance, g.cond, g.race_name]]
@@ -123,106 +126,142 @@ print(Style.RESET_ALL)
 
 
 #====================================================
-# PRISM_R分析の実行
+# PRISM分析の実行
 #====================================================
 
-print(Fore.GREEN)
-print('====================================================')
-print('  PRISM_R分析')
-print('====================================================')
-print(Style.RESET_ALL)
-print('PRISM_R分析を実行しています。')
+if g.exe_opt in [2, 4]:
 
-# 馬名リストの取得
-target_horses = RaceTable_df['馬名'].tolist()
+    #====================================================
+    # PRISM分析の実行
+    #====================================================
 
-# 対象馬の過去成績をDBから取得
-query = f"SELECT * FROM \"HorseRecords\" WHERE \"馬名\" IN ({str(target_horses)[1:-1]})"
-horse_records_all = pd.read_sql(query, con=engine)
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  PRISM分析')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('これより、PRISM分析を開始します。')
 
-# PRISM_Base：基礎偏差値の算出
-PRISM_Base_df = PRISM_R.PRISM_Base(engine, horse_records_all)
-# PRISM_R分析の実行
-PRISM_R_df = PRISM_R.PRISM_R_Analysis(PRISM_Base_df, RaceTable_df,)
+    #====================================================
+    # PRISM_R分析の実行
+    #====================================================
 
-# PostgreSQLへの保存
-PRISM_Base_df.to_sql('PRISM_Base', con=engine, if_exists='replace', index=False)
-PRISM_R_df.to_sql('PRISM_R', con=engine, if_exists='replace', index=False)
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  PRISM_R分析')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('PRISM_R分析を実行しています。')
 
-# PRISM_Rのビジュアル化実行
-PRISM_R.PRISM_R_Visualization(PRISM_R_df)
+    # 馬名リストの取得
+    target_horses = RaceTable_df['馬名'].tolist()
 
-print(Fore.YELLOW)
-print('PRISM_R分析が完了しました。')
-print(Style.RESET_ALL)
+    # 対象馬の過去成績をDBから取得
+    query = f"SELECT * FROM \"HorseRecords\" WHERE \"馬名\" IN ({str(target_horses)[1:-1]})"
+    horse_records_all = pd.read_sql(query, con=engine)
+
+    # PRISM_Base：基礎偏差値の算出
+    PRISM_Base_df = PRISM_R.PRISM_Base(engine, horse_records_all)
+    # PRISM_R分析の実行
+    PRISM_R_df = PRISM_R.PRISM_R_Analysis(PRISM_Base_df, RaceTable_df,)
+
+    # PostgreSQLへの保存
+    PRISM_Base_df.to_sql('PRISM_Base', con=engine, if_exists='replace', index=False)
+    PRISM_R_df.to_sql('PRISM_R', con=engine, if_exists='replace', index=False)
+
+    # PRISM_Rのビジュアル化実行
+    PRISM_R.PRISM_R_Visualization(PRISM_R_df)
+
+    print(Fore.YELLOW)
+    print('PRISM_R分析が完了しました。')
+    print(Style.RESET_ALL)
+
+
+    #====================================================
+    # PRISM_G分析の実行
+    #====================================================
+
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  PRISM_G分析')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('PRISM_G分析を実行しています。')
+
+    # マスターデータの読み込み
+    MasterDataset_df = pd.read_sql(sql='SELECT * FROM "MasterDataset";', con=engine)
+
+    # PRISM_Gの実行
+    track_summary, intrinsic_baselines = PRISM_G.RPCI_Shift_Analysis(MasterDataset_df)
+
+    # 環境・展開補正の適用
+    PRISM_RG_df = PRISM_G.PRISM_G_Analysis(
+        PRISM_R_df, 
+        MasterDataset_df, 
+        RaceTable_df, 
+        track_summary, 
+        intrinsic_baselines
+    )
+
+    # PostgreSQLに保存
+    PRISM_RG_df.to_sql('PRISM_RG', con=engine, if_exists='replace')
+
+    # PRISM_Gのビジュアル化実行
+    PRISM_G.PRISM_G_Visualization(PRISM_RG_df)
+    # PRISM_RGのビジュアル化実行
+    PRISM_G.PRISM_RG_Visualization(PRISM_RG_df)
+
+    print(Fore.YELLOW)
+    print('PRISM_G分析が完了しました。')
+    print(Style.RESET_ALL)
+
+
+    #====================================================
+    # PRISM_B分析の実行
+    #====================================================
+
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  PRISM_B分析')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('PRISM_B分析を実行しています。')
+
+    # PRISM_Bの実行
+    PRISM_B_df = PRISM_B.PRISM_B_Analysis(RaceTable_df, HorseRecords_df, CW_df, Hanro_df, g.race_date)
+    PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace')
+
+    # PRISM_RGBの実行
+    PRISM_RGB_df = PRISM_B.Calculate_PRISM_RGB(PRISM_RG_df, PRISM_B_df)
+    PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace')
+
+    print(Fore.YELLOW)
+    print('PRISM_B分析が完了しました。')
+    print(Style.RESET_ALL)
+
+    # PRISM_Bのビジュアル化実行
+    PRISM_B.PRISM_B_Visualization(PRISM_B_df, RaceTable_df)
+    # PRISM_RGBのビジュアル化実行
+    PRISM_B.PRISM_RGB_Visualization(PRISM_RGB_df)
+    # 調教データのビジュアル化実行
+    PRISM_B.Horse_Training_Visualization(RaceTable_df, CW_df, Hanro_df, g.race_date)
+
+    print(Fore.RED)
+    print('PRISM分析が完了しました!')
+    print(Style.RESET_ALL)
 
 
 #====================================================
-# PRISM_G分析の実行
+# SCENE分析の実行
 #====================================================
 
-print(Fore.GREEN)
-print('====================================================')
-print('  PRISM_G分析')
-print('====================================================')
-print(Style.RESET_ALL)
-print('PRISM_G分析を実行しています。')
+if g.exe_opt in [3, 4]:
 
-# マスターデータの読み込み
-MasterDataset_df = pd.read_sql(sql='SELECT * FROM "MasterDataset";', con=engine)
-
-# PRISM_Gの実行
-track_summary, intrinsic_baselines = PRISM_G.RPCI_Shift_Analysis(MasterDataset_df)
-
-# 環境・展開補正の適用
-PRISM_RG_df = PRISM_G.PRISM_G_Analysis(
-    PRISM_R_df, 
-    MasterDataset_df, 
-    RaceTable_df, 
-    track_summary, 
-    intrinsic_baselines
-)
-
-# PostgreSQLに保存
-PRISM_RG_df.to_sql('PRISM_RG', con=engine, if_exists='replace')
-
-# PRISM_Gのビジュアル化実行
-PRISM_G.PRISM_G_Visualization(PRISM_RG_df)
-# PRISM_RGのビジュアル化実行
-PRISM_G.PRISM_RG_Visualization(PRISM_RG_df)
-
-print(Fore.YELLOW)
-print('PRISM_G分析が完了しました。')
-print(Style.RESET_ALL)
-
-
-#====================================================
-# PRISM_B分析の実行
-#====================================================
-
-print(Fore.GREEN)
-print('====================================================')
-print('  PRISM_B分析')
-print('====================================================')
-print(Style.RESET_ALL)
-print('PRISM_B分析を実行しています。')
-
-# PRISM_Bの実行
-PRISM_B_df = PRISM_B.PRISM_B_Analysis(RaceTable_df, HorseRecords_df, CW_df, Hanro_df, g.race_date)
-PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace')
-
-# PRISM_RGBの実行
-PRISM_RGB_df = PRISM_B.Calculate_PRISM_RGB(PRISM_RG_df, PRISM_B_df)
-PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace')
-
-# PRISM_Bのビジュアル化実行
-PRISM_B.PRISM_B_Visualization(PRISM_B_df, RaceTable_df)
-# PRISM_RGBのビジュアル化実行
-PRISM_B.PRISM_RGB_Visualization(PRISM_RGB_df)
-# 調教データのビジュアル化実行
-PRISM_B.Horse_Training_Visualization(RaceTable_df, CW_df, Hanro_df, g.race_date)
-
-print(Fore.YELLOW)
-print('PRISM_B分析が完了しました。')
-print(Style.RESET_ALL)
-
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  SCENE分析')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('これより、SCENE分析を開始します。')
+    print('Now Under Construction...')
+    print('')
