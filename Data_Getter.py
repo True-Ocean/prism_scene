@@ -8,6 +8,7 @@
 import shutil
 import pandas as  pd
 import pyautogui as pgui
+pgui.FAILSAFE = True
 import os
 import time
 from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID
@@ -66,9 +67,9 @@ if g.mode == 'dual':
         "1番目の馬名": (-649, -841),
         "★画面イメージCSV": (-647, -697),
         "各馬実績画面|⬇︎": (-723, -961),
-        "メニューバー|閉じる": (-858, -991),
+        "メニューバー|閉じる": (-858, -990),
         "血統表ボタン": (4, -961),
-        "血統表|出力ボタン": (-44, -963),
+        "血統表|出力ボタン": (-44, -960),
         "5大血統表・HTML形式出力": (13, -936),
         "血統表|⬇︎": (-706, -426),
         "調教一覧ボタン": (-75, -962),
@@ -110,10 +111,10 @@ else:
 
 
 # 待ち時間の設定
-click_time = 0.3
-short_wait_time = 0.15
+click_time = 0.2
+short_wait_time = 0.3
 wait_time = 0.75
-long_wait_time = 6
+long_wait_time = 8
 
 
 #====================================================
@@ -181,8 +182,10 @@ def Data_Getter():
     # アーカイブフォルダがまだ存在していない場合
     if not os.path.exists(race_dir):
 
+        focus_vscode()
         input(f'TFJVのメイン画面で、{Fore.YELLOW}対象のレースの出馬表を開いていること{Style.RESET_ALL}を確認してください。>> Enter')
         print('')
+        focus_target()
 
         # TFJVウィンドウの座標取得
         get_target_rect()
@@ -199,6 +202,9 @@ def Data_Getter():
         smart_click('ダイアログ|OKボタン')
         smart_click('小ダイアログ|上書きボタン')
         print('')
+
+        # # デバグ用（マウス自動操作を止める）
+        # input('>>')
 
         # 各馬実績データ取得
         print('実績データ取得...')
@@ -264,10 +270,9 @@ def Data_Getter():
         pgui.typewrite('CW.csv')
         smart_click('ダイアログ|OKボタン')
         smart_click('小ダイアログ|上書きボタン')
-        time.sleep(wait_time)
+        time.sleep(wait_time * 2)
         smart_click('メニューバー|閉じる')
-
-        focus_vscode()
+        time.sleep(wait_time * 2)
 
         # アーカイブフォルダを作成
         os.makedirs(race_dir)
@@ -307,6 +312,9 @@ def Data_Getter():
         print(Fore.YELLOW)
         print('PRISM_SCENE分析に必要なデータをアーカイブフォルダから取得しました。')
         print(Style.RESET_ALL)
+    
+    focus_vscode()
+
 
 if __name__ == '__main__':
     Data_Getter()
