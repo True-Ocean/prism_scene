@@ -251,6 +251,28 @@ if g.exe_opt in [2, 4]:
     print(Style.RESET_ALL)
 
 
+    #====================================================
+    # PRISM可視化データのアーカイブ
+    #====================================================
+
+    # アーカイブフォルダの設定
+    race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
+    # 作業用フォルダの設定
+    work_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
+
+    # 各画像データをアーカイブフォルダにコピー
+    shutil.copy(f'{work_dir}PRISM_R.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_G.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_RG.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_B_Hanro.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_B_CW.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_B_Hanro_Time.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_B_Hanro_Lap.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_B_CW_Time.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_B_CW_Lap.png', race_dir)
+    shutil.copy(f'{work_dir}PRISM_RGB.png', race_dir)
+
+
 #====================================================
 # SCENE分析の実行
 #====================================================
