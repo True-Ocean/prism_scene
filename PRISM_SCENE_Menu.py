@@ -6,6 +6,7 @@
 
 # ライブラリの準備
 import os
+import sys
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -160,6 +161,40 @@ class RaceInfoApp:
         self.var_cond.set(df.iat[0, 7]); self.var_race_name.set(df.iat[0, 8])
 
     def analysis_start(self):
+
+        # 入力値の取得
+        race_date = self.var_race_date.get()
+        stadium = self.var_stadium.get()
+        r_num = self.var_r_num.get()
+        race_name = self.var_race_name.get()
+        td = self.var_td.get()
+        distance_val = self.var_distance.get()
+        age = self.var_age.get()
+        clas = self.var_clas.get()
+        cond = self.var_cond.get()
+
+        # 必須入力チェック
+        # チェック対象をリスト化
+        required_fields = {
+            "日付": race_date,
+            "競馬場": stadium,
+            "レース番号": r_num,
+            "トラック": td,
+            "距離": distance_val,
+            "年齢限定": age,
+            "クラス": clas,
+            "馬場状態": cond
+        }
+
+        empty_fields = [label for label, val in required_fields.items() if not str(val).strip()]
+
+        if empty_fields:
+            # いずれかが空の場合、ターミナルに警告を表示して中断
+            print(Fore.RED + "\n[入力エラー] 以下の項目が未入力です。")
+            print(f"対象項目: {', '.join(empty_fields)}")
+            print("全ての情報を入力してから「分析スタート」を押してください。" + Style.RESET_ALL)
+            return  # ここで処理を終了するため、下の破棄処理（destroy）は走らない
+        
         """終了処理とグローバル変数への代入"""
         g.race_date = self.var_race_date.get()
         g.stadium = self.var_stadium.get()
@@ -177,46 +212,60 @@ class RaceInfoApp:
         # --- 【重要】ここから確実に消すための処理 ---
         # まずウィンドウを隠す
         self.app.withdraw()
-
         # OSに「隠した」ことを認識させるために強制更新
         self.app.update()
-        
         # ウィジェットを破棄
         self.app.destroy()
-        
         # メインループを終了
         self.app.quit()
 
     def run(self):
-            # まずウィンドウを非表示にする
-            self.app.withdraw()
-            
-            # 座標を計算するために一度情報を更新
-            self.app.update_idletasks()
-            
-            # 3. サイズを取得して中央座標を計算
-            w = self.app.winfo_width()
-            h = self.app.winfo_height()
-            x = (self.app.winfo_screenwidth() // 2) - (w // 2)
-            y = (self.app.winfo_screenheight() // 2) - (h // 2)
-            
-            # 座標を設定
-            self.app.geometry(f'+{x}+{y}')
-            
-            # ここで初めて表示させる
-            self.app.deiconify()
-            
-            # マウスを「情報を更新」ボタンに配置
-            pgui.moveTo(650, 700)
+        
+        # 左上の「×」ボタンが押された時の処理を登録
+        # "WM_DELETE_WINDOW" はウィンドウの閉じるボタン（×）を指す
+        self.app.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-            # メインループ開始
-            self.app.mainloop()
+        # まずウィンドウを非表示にする
+        self.app.withdraw()
+        
+        # 座標を計算するために一度情報を更新
+        self.app.update_idletasks()
+        
+        # 3. サイズを取得して中央座標を計算
+        w = self.app.winfo_width()
+        h = self.app.winfo_height()
+        x = (self.app.winfo_screenwidth() // 2) - (w // 2)
+        y = (self.app.winfo_screenheight() // 2) - (h // 2)
+        
+        # 座標を設定
+        self.app.geometry(f'+{x}+{y}')
+        
+        # ここで初めて表示させる
+        self.app.deiconify()
+        
+        # マウスを「情報を更新」ボタンに配置
+        pgui.moveTo(650, 700)
 
-            # mainloopを抜けた（quitが呼ばれた）直後に、外側から確実に破棄する
-            try:
-                self.app.destroy()
-            except:
-                pass
+        # メインループ開始
+        self.app.mainloop()
+
+        # mainloopを抜けた（quitが呼ばれた）直後に、外側から確実に破棄する
+        try:
+            self.app.destroy()
+        except:
+            pass
+
+    def on_closing(self):
+        """×ボタンが押された時に実行される処理"""
+        print(Fore.YELLOW + "\n[中断] ユーザーによってウィンドウが閉じられました。プログラムを終了します。" + Style.RESET_ALL)
+        print('')
+        
+        # Tkinterのリソースを安全に解放
+        self.app.destroy()
+        
+        # プログラム全体を終了させる
+        # これを入れないと、呼び出し元のメインコードが動き続けてしまいます
+        os._exit(0)
 
 
 def PRISM_SCENE_Menu():
