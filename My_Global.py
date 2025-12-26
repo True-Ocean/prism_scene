@@ -11,14 +11,7 @@ age = '３上'
 clas = 'Ｇ１'
 cond = '良'
 hr_num = 16
-exe_opt = 0
-scr_opt = True
+exe_opt = 4
 filename = '2025-12-28中山11R'
 
 mode = 'single'
-
-# TFJVウィンドウの座標
-original_x = -1131
-original_y = -1049
-original = 1920
-original_h = 1049
