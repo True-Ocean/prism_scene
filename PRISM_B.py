@@ -183,7 +183,7 @@ def Calculate_PRISM_RGB(prism_rg_df, prism_b_df):
 
 def PRISM_B_Visualization(prism_b_df, race_table_df):
     """
-    path_effectsを使用して、重なりに強い（縁取り文字）ビジュアル化を行います。
+    坂路とCWのグラフをそれぞれ独立して作成し、個別に保存します。
     """
 
     # Mac用フォント設定
@@ -205,41 +205,48 @@ def PRISM_B_Visualization(prism_b_df, race_table_df):
         prev_acc = df[[f'前走_{mode}_最大加速', f'前々走_{mode}_最大加速']].mean(axis=1)
         df[f'{mode}_加速変化'] = (df[f'今回_{mode}_最大加速'] - prev_acc)
 
-    modes = [('CW', 'royalblue'), ('坂路', 'forestgreen')]
-    fig, axes = plt.subplots(1, 2, figsize=(20, 10))
-
+    # グラフ設定の定義
+    # 保存ファイル名用に英名(slug)を追加
+    modes = [('CW', 'royalblue', 'CW'), ('坂路', 'forestgreen', 'Hanro')]
+    
     # 縁取りスタイルの定義（白縁に黒文字）
     pe = [path_effects.withStroke(linewidth=3, foreground="white")]
 
-    for i, (mode, color) in enumerate(modes):
-        ax = axes[i]
+    # 保存先ディレクトリの確認
+    if not os.path.exists('./Media_files'):
+        os.makedirs('./Media_files')
+
+    for mode, color, slug in modes:
         m_df = df[df[f'今回_{mode}_最良'].notna()].copy()
         
         if m_df.empty:
-            ax.set_title(f"{mode}：データなし")
+            print(f"{mode}のデータがないため、グラフ作成をスキップします。")
             continue
+
+        # --- 個別のFigureを作成 ---
+        fig, ax = plt.subplots(figsize=(12, 10))
 
         # 1. 散布図
         ax.scatter(m_df[f'{mode}_キレ変化'], m_df[f'{mode}_加速変化'], 
-                   s=300, color=color, alpha=0.7, edgecolors='black', zorder=3)
+                   s=200, color=color, alpha=0.7, edgecolors='black', zorder=3)
 
-        # 2. 馬名ラベル（path_effectsを適用）
+        # 2. 馬名ラベル
         for _, row in m_df.iterrows():
             num = int(mapping.get(row['馬名'], 0))
             label = f"{num} {row['馬名']}"
             
-            # 簡易的な重なり回避：馬番の奇数/偶数でラベルを上下に振り分ける
+            # ラベル位置の微調整
             offset = 0.05 if num % 2 == 0 else -0.08
             va = 'bottom' if num % 2 == 0 else 'top'
             
             ax.text(row[f'{mode}_キレ変化'], 
                     row[f'{mode}_加速変化'] + offset, 
                     label, 
-                    fontsize=11, 
+                    fontsize=12, 
                     fontweight='bold',
                     ha='center', 
                     va=va,
-                    path_effects=pe, # 縁取りを適用
+                    path_effects=pe,
                     zorder=4)
 
         # 十字のガイドライン
@@ -247,27 +254,32 @@ def PRISM_B_Visualization(prism_b_df, race_table_df):
         ax.axvline(0, color='gray', lw=1.5, ls='--', zorder=1)
         
         # 領域ラベル
-        ax.text(0.98, 0.98, '【成長・充実】', transform=ax.transAxes, 
-                fontsize=18, color='red', alpha=0.6, fontweight='bold',
+        ax.text(0.95, 0.95, '【成長・充実】', transform=ax.transAxes, 
+                fontsize=20, color='red', alpha=0.6, fontweight='bold',
                 ha='right', va='top', path_effects=pe)
         
-        ax.text(0.02, 0.02, '【劣化・停滞】', transform=ax.transAxes, 
-                fontsize=18, color='blue', alpha=0.6, fontweight='bold',
+        ax.text(0.05, 0.05, '【劣化・停滞】', transform=ax.transAxes, 
+                fontsize=20, color='blue', alpha=0.6, fontweight='bold',
                 ha='left', va='bottom', path_effects=pe)
 
-        ax.set_title(f"【{mode}】調教パフォーマンス変化分析", fontsize=20, fontweight='bold', pad=20)
-        ax.set_xlabel("末脚の鋭さ（L1タイム）の更新秒数 ※右ほど良化", fontsize=13)
-        ax.set_ylabel("加速の持続性（L2-L1）の更新秒数 ※上ほど良化", fontsize=13)
+        ax.set_title(f"PRISM_B分析 ( {g.race_date} {g.stadium} {g.td} {g.distance}m {g.race_name} )\n【{mode}】調教パフォーマンス変化分析", fontsize=22, fontweight='bold', pad=35)
+        # ax.set_title(f"【{mode}】調教パフォーマンス変化分析", fontsize=22, fontweight='bold', pad=20)
+        ax.set_xlabel("末脚の鋭さ（L1タイム）の更新秒数 ※右ほど良化", fontsize=14)
+        ax.set_ylabel("加速の持続性（L2-L1）の更新秒数 ※上ほど良化", fontsize=14)
         ax.grid(True, alpha=0.2, zorder=0)
 
         # 軸範囲の自動調整
-        padding = 0.4
+        padding = 0.5
         ax.set_xlim(m_df[f'{mode}_キレ変化'].min() - padding, m_df[f'{mode}_キレ変化'].max() + padding)
         ax.set_ylim(m_df[f'{mode}_加速変化'].min() - padding, m_df[f'{mode}_加速変化'].max() + padding)
 
-    plt.tight_layout()
-    plt.savefig('./Media_files/PRISM_B.png', dpi=150, bbox_inches='tight')
-    # plt.show()
+        # 個別に保存
+        save_path = f'./Media_files/PRISM_B_{slug}.png'
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        
+        # メモリ解放のために閉じる
+        plt.close(fig)
 
     return df
 
@@ -295,18 +307,17 @@ def PRISM_RGB_Visualization(prism_rgb_df):
 
     # タイトルの設定（gオブジェクトが定義されている前提）
     try:
-        race_title = f"{g.stadium} {g.distance}m ({g.cond})"
+        race_title = f"{g.race_date} {g.stadium} {g.td} {g.distance}m {g.race_name} ({g.cond})"
     except NameError:
         race_title = "対象レース"
         
-    fig.suptitle(f"PRISM 最終統合分析：{race_title}\n(R:地力 / RG:適性補正 / RGB:調教・成長補正)", 
-                 fontsize=28, fontweight='bold')
+    fig.suptitle(f"PRISM分析 最終結果：{race_title}", fontsize=28, fontweight='bold')
 
     # 可視化する設定：(カラム名, タイトル, 色)
     plot_configs = [
-        ('PRISM_R_Score',   '① PRISM_R：原能力', 'crimson'),
-        ('PRISM_RG_Score',  '② PRISM_RG：条件補正後', 'forestgreen'),
-        ('PRISM_RGB_Score', '③ PRISM_RGB：最終偏差値', 'royalblue')
+        ('PRISM_R_Score',   '① PRISM_R：基礎能力', 'crimson'),
+        ('PRISM_RG_Score',  '② PRISM_RG：レース条件補正後', 'forestgreen'),
+        ('PRISM_RGB_Score', '③ PRISM_RGB：調教補正後（最終偏差値）', 'royalblue')
     ]
 
     # X軸の最大値を統一して比較しやすくする
