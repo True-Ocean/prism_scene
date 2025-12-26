@@ -36,6 +36,19 @@ def SCENE_Script():
     PRISM_RG = pd.read_sql('SELECT * FROM "PRISM_RG"', con=engine)
     PRISM_B = pd.read_sql('SELECT * FROM "PRISM_B"', con=engine)
     PRISM_RGB = pd.read_sql('SELECT * FROM "PRISM_RGB"', con=engine)
+    HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
+
+    # 各馬ごとに「年齢」の最大値をとりつつ、最新の「性別」「勝負服色」を取得する
+    SCENE_Attributes_df = HorseRecords_df.groupby('馬名').agg({
+    '年齢': 'max',
+    '性別': 'first',      # 日付降順なので、一番上（最新）の性別を取得
+    '勝負服色': 'first'    # 同様に最新の勝負服色を取得
+    }).reset_index()
+
+    # 馬名の重複を完全に排除（もしaggで漏れがあった場合用）
+    SCENE_Attributes_df = SCENE_Attributes_df.drop_duplicates(subset=['馬名'])
+    # インデックスをリセットして綺麗にする
+    SCENE_Attributes_df = SCENE_Attributes_df.reset_index(drop=True)
 
     # 1. ベースとなるデータフレームを作成
     # mergeを繰り返して、馬名をキーに全データを統合する（これが最も安全）
@@ -45,13 +58,14 @@ def SCENE_Script():
     df = df.merge(PRISM_R[['馬名', 'EPI', '脚質', '安定度']], on='馬名', how='left')
     df = df.merge(PRISM_B[['馬名', '中何週']], on='馬名', how='left')
     df = df.merge(PRISM_RGB[['馬名', 'PRISM_B_Score', 'PRISM_RGB_Score']], on='馬名', how='left')
+    df = df.merge(SCENE_Attributes_df[['馬名', '性別', '年齢', '勝負服色']], on='馬名', how='left')
 
     # 3. カラム名の整理
     column_map = {
         'EPI': '先行指数',
         'PRISM_R_Score': '基礎能力',
         'G_Avg': 'レース条件適合率',
-        'PRISM_B_Score': '調教成長度',
+        'PRISM_B_Score': '調教成長ポイント',
         'PRISM_RGB_Score': '最終期待値'
     }
     df = df.rename(columns=column_map)
@@ -64,10 +78,10 @@ def SCENE_Script():
     def generate_feature_text(row):
         try:
             return (
-                f"{int(row['枠番'])}枠({row['枠色']}) {int(row['番'])}番 {row['馬名']}, "
+                f"{int(row['枠番'])}枠({row['枠色']}) {int(row['番'])}番 {row['馬名']} {row['性別']}{int(row['年齢'])}歳, "
                 f"先行指数:{row['先行指数']:.2f}, 脚質：{row['脚質']}, 安定度:{row['安定度']:.2f}, "
                 f"基礎能力:{row['基礎能力']:.2f}, レース条件適合率:{row['レース条件適合率']:.2%}, "
-                f"中:{int(row['中何週'])}週, 調教成長度:{row['調教成長度']:.2f}, 最終期待値:{row['最終期待値']:.2f}"
+                f"中{int(row['中何週'])}週, 調教成長ポイント:{row['調教成長ポイント']:.2f}, 最終期待値:{row['最終期待値']:.2f}, 勝負服色:({row['勝負服色']})"
             )
         except:
             return f"データ不足: {row['馬名']}"
@@ -78,10 +92,13 @@ def SCENE_Script():
     df = df.sort_values(by='番').reset_index(drop=True)
     df.to_sql('SCENE_Script', con=engine, if_exists='replace', index=False)
 
+    return df
 
 #====================================================
 # SCENE_Scriptの作成
 #====================================================
 
 if __name__ == "__main__":
-    SCENE_Script()
+    
+    SCENE_Script_df = SCENE_Script()
+    print(SCENE_Script_df['特徴'][4])
