@@ -454,7 +454,7 @@ if __name__ == "__main__":
     )
     
     # 4. 結果を PostgreSQL の "PRISM_RG" テーブルに保存
-    PRISM_RG_df.to_sql('PRISM_RG', con=engine, if_exists='replace')
+    PRISM_RG_df.to_sql('PRISM_RG', con=engine, if_exists='replace', index=False)
     
     # 5. PRISM_G可視化グラフの生成
     PRISM_G_Visualization(PRISM_RG_df)

@@ -81,7 +81,7 @@ RaceInfo_df = pd.DataFrame(data = r_info, index = ['レース情報'], columns =
 # csvとして保存
 RaceInfo_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceInfo.csv', index=False, encoding="utf-8")
 # PostgreSQLに保存
-RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace')
+RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace', index=False)
 
 print(Fore.YELLOW)
 print('今回のレース情報を取得しました。')
@@ -115,10 +115,10 @@ HorseRecords_df = Data_Preparation.Horse_Records_Preparation(RaceTable_df)
 Hanro_df, CW_df = Data_Preparation.Training_Data_Preparation()
 
 # PRISM分析に必要となる3つの基本DFをPostgreSQLに保存
-RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace')
-HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace')
-Hanro_df.to_sql('Hanro', con=engine, if_exists = 'replace')
-CW_df.to_sql('CW', con=engine, if_exists = 'replace')
+RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace', index=False)
+HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace', index=False)
+Hanro_df.to_sql('Hanro', con=engine, if_exists = 'replace', index=False)
+CW_df.to_sql('CW', con=engine, if_exists = 'replace', index=False)
 
 print(Fore.YELLOW)
 print('PRISM_SCENE分析に必要なデータの整形が完了しました。')
@@ -229,11 +229,11 @@ if g.exe_opt in [2, 4]:
 
     # PRISM_Bの実行
     PRISM_B_df = PRISM_B.PRISM_B_Analysis(RaceTable_df, HorseRecords_df, CW_df, Hanro_df, g.race_date)
-    PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace')
+    PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace', index=False)
 
     # PRISM_RGBの実行
     PRISM_RGB_df = PRISM_B.Calculate_PRISM_RGB(PRISM_RG_df, PRISM_B_df)
-    PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace')
+    PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace', index=False)
 
     print(Fore.YELLOW)
     print('PRISM_B分析が完了しました。')
