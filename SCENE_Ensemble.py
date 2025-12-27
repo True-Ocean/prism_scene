@@ -50,18 +50,9 @@ print("APIクライアント初期化完了（モデル: gemini-2.5-flash）")
 
 
 #====================================================
-# マッチアップデータ作成
+# Matchup_df作成関数
 #====================================================
 
-# ライバル関係抽出
-HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
-SCENE_Cast_df = pd.read_sql('SELECT * FROM "SCENE_Cast"', con=engine)
-SCENE_Ensemble_df = SCENE_Cast_df
-
-# 日付とレース名の結合
-HorseRecords_df['Race_Key'] = HorseRecords_df['日付'].dt.strftime('%Y-%m-%d') + "_" + HorseRecords_df['レース名']
-
-# Matchup_df作成関数
 def create_matchup_df(df):
         
     Matchup_df = pd.merge(
@@ -89,40 +80,11 @@ def create_matchup_df(df):
     
     return Matchup_df
 
-# Matchup_dfの作成
-Matchup_df = create_matchup_df(HorseRecords_df)
-Matchup_df.to_sql('Matchup', con=engine, if_exists = 'replace', index=False)
-
 
 #====================================================
-# マッチアップのスコアリング（時間軸考慮）
-#====================================================
-
-# ----------------------------------------------------
-# 1. 時間差（Time Delta）の計算
-# ----------------------------------------------------
-
-# 現在の分析対象となる「基準日」を設定
-# 通常はデータセット内の最新の日付を基準とする。
-current_date = Matchup_df['日付'].max()
-
-# 基準日から各レース日までの「経過日数」を計算
-Matchup_df['Days_Since_Race'] = (current_date - Matchup_df['日付']).dt.days
-
-# ----------------------------------------------------
-# 2. 時間差の正規化
-# ----------------------------------------------------
-
-# 経過日数を正規化し、[0, 1] の範囲に収める
-# 最も古い対戦が 1.0、最も新しい（基準日と同じ）対戦が 0.0 になるようにする
-max_days = Matchup_df['Days_Since_Race'].max()
-Matchup_df['Normalized_Time_Diff'] = Matchup_df['Days_Since_Race'] / max_days
-
-# ----------------------------------------------------
-# 3. 動的な重み付けパラメータ k の設定
-# ----------------------------------------------------
-
 # 平均年齢に基づいたパラメータ k を設定する関数
+#====================================================
+
 def get_decay_parameter(age_a, age_b):
     avg_age = (age_a + age_b) / 2
     
@@ -137,156 +99,20 @@ def get_decay_parameter(age_a, age_b):
         # 古馬は経験も重要なので、減衰を緩やかにする
         return 1.0
 
-# Matchup_dfに k パラメータを適用
-Matchup_df['k_decay'] = Matchup_df.apply(
-    lambda row: get_decay_parameter(row['年齢_A'], row['年齢_B']),
-    axis=1
-)
-
-# ----------------------------------------------------
-# 4. 時間軸の重み W_time の計算
-# ----------------------------------------------------
-
-# 指数関数による時間軸の重み付けを計算
-Matchup_df['W_time'] = np.exp(-Matchup_df['k_decay'] * Matchup_df['Normalized_Time_Diff'])
-
 
 #====================================================
-# 定常的スコアのための指標計算
-#====================================================
-
-# ----------------------------------------------------
-# 1. 勝敗（Win_A）と着順差（Order_Diff）の計算（変更なし）
-# ----------------------------------------------------
-
-Matchup_df['Win_A'] = np.where(Matchup_df['着順_A'] < Matchup_df['着順_B'], 1, 0)
-Matchup_df['Order_Diff'] = Matchup_df['着順_B'] - Matchup_df['着順_A']
-
-
-# ----------------------------------------------------
-# 2. 走破タイム差（Time_Diff）の計算
-# ----------------------------------------------------
-
-# Time_Diff > 0 なら Aの走破タイムがBより速い
-Matchup_df['Time_Diff'] = Matchup_df['走破タイム_B'] - Matchup_df['走破タイム_A']
-
-
-# ----------------------------------------------------
-# 3. Ave-3Fタイム差（Ave3F_Diff）の計算
-# ----------------------------------------------------
-
-# Ave3F_Diff > 0 なら Aの前半平均速度相当タイムがBより速い
-Matchup_df['Ave3F_Diff'] = Matchup_df['Ave-3F_B'] - Matchup_df['Ave-3F_A']
-
-
-# ----------------------------------------------------
-# 4. 上り3Fタイム差（Last3F_Diff）の計算
-# ----------------------------------------------------
-
-# Last3F_Diff > 0 なら Aの上り3FタイムがBより速い
-Matchup_df['Last3F_Diff'] = Matchup_df['上り3F_B'] - Matchup_df['上り3F_A']
-
-
-#====================================================
-# 定常的ライバルスコアの集計
-#====================================================
-
-# ----------------------------------------------------
-# 1. タイムパフォーマンス指標の統合 (Wtd_Time_Perfの準備)
-# ----------------------------------------------------
-
-# 複数のタイム差指標（Time_Diff, Ave3F_Diff, Last3F_Diff）を統合するスコアを作成
-# ここでは、単純に平均を取ることで、全体、後半、前半のパフォーマンスを均等に評価
-Matchup_df['Combined_Time_Perf'] = (
-    Matchup_df['Time_Diff'] + 
-    Matchup_df['Ave3F_Diff'] + 
-    Matchup_df['Last3F_Diff']
-) / 3
-
-# ----------------------------------------------------
-# 2. グループ化と重み付き集計
-# ----------------------------------------------------
-
-# グループ化するキー
-group_keys = ['馬名_A', '馬名_B']
-
-# 時間軸重み（W_time）の合計を計算
-Total_Weight_df = Matchup_df.groupby(group_keys)['W_time'].sum().reset_index()
-Total_Weight_df = Total_Weight_df.rename(columns={'W_time': 'Total_Weight'})
-
 # 各指標の (指標 * 重み) の合計を計算するカスタム集計関数
-# def weighted_sum(df, column):
-#     return (df[column] * df['W_time']).sum()
-# # --- 修正案 ---
+#====================================================
+
 def weighted_sum(df, column):
     # NaNを0で埋める、あるいはその行を除外して重み付き合計を出す
     valid_mask = df[column].notna()
     return (df.loc[valid_mask, column] * df.loc[valid_mask, 'W_time']).sum()
 
-# 重み付き集計
-Wtd_Sum_df = Matchup_df.groupby(group_keys).apply(
-    lambda x: pd.Series({
-        # 勝利数（Win_A）の重み付き合計
-        'Sum_Wtd_Win_A': weighted_sum(x, 'Win_A'),
-        # 着順差（Order_Diff）の重み付き合計
-        'Sum_Wtd_Order_Diff': weighted_sum(x, 'Order_Diff'),
-        # 統合タイムパフォーマンスの重み付き合計
-        'Sum_Wtd_Time_Perf': weighted_sum(x, 'Combined_Time_Perf'),
-        
-        # 新規追加: ペアの人気度の合計（人気度の重み付けはしない）
-        # 人気度は時間とともに変動する指標ですが、ここではシンプルに「対戦時の人気」の合計を計算します。
-        'Sum_Popularity_A': x['人気_A'].sum(),
-        'Sum_Popularity_B': x['人気_B'].sum(),
-
-        # 総対戦回数 (今後のためにカウント)
-        'Total_Matches': len(x)
-    }),
-        include_groups=False
-).reset_index()
-
-# ----------------------------------------------------
-# 3. Final_Pair_DFの作成（重み付き平均の計算）
-# ----------------------------------------------------
-
-# 重み付き合計と総重みを結合
-Pair_df = pd.merge(Wtd_Sum_df, Total_Weight_df, on=group_keys)
-
-# 重み付き平均を計算
-Pair_df['Wtd_Win_Rate'] = Pair_df['Sum_Wtd_Win_A'] / Pair_df['Total_Weight']
-Pair_df['Wtd_Order_Diff'] = Pair_df['Sum_Wtd_Order_Diff'] / Pair_df['Total_Weight']
-Pair_df['Wtd_Time_Perf'] = Pair_df['Sum_Wtd_Time_Perf'] / Pair_df['Total_Weight']
-
-# 人気度の平均値（数値が小さいほど人気が高い）
-# Total_Matches * 2 は、馬Aと馬Bの人気の総数
-Pair_df['Average_Popularity_Score'] = (
-    Pair_df['Sum_Popularity_A'] + Pair_df['Sum_Popularity_B']
-) / (Pair_df['Total_Matches'] * 2) 
-
-# 最終スコアとして必要なカラムを選択 (Average_Popularity_Scoreを追加)
-Final_Pair_df = Pair_df[[
-    '馬名_A', '馬名_B', 'Total_Matches', 'Total_Weight', 
-    'Wtd_Win_Rate', 'Wtd_Order_Diff', 'Wtd_Time_Perf', 
-    'Average_Popularity_Score' # <- 追加
-]]
-
 
 #====================================================
-# 時間軸トレンドスコアの計算
+# 時間軸トレンドスコアの計算関数
 #====================================================
-
-# ----------------------------------------------------
-# 1. 時間軸変数 'Days_From_Start' を作成
-# ----------------------------------------------------
-
-# 最も古い日付を取得
-min_date = Matchup_df['日付'].min()
-
-# 最も古い日付からの経過日数（これが時間軸変数 t になる）
-Matchup_df['Days_From_Start'] = (Matchup_df['日付'] - min_date).dt.days
-
-# ----------------------------------------------------
-# 2. 時間軸トレンドスコアの計算
-# ----------------------------------------------------
 
 # 時間軸トレンドは、優劣指標（y）を時間（x）で回帰したときの「傾き」を評価
 # ここでは、Order_Diff（着順差）を主要な優劣指標とする。
@@ -322,174 +148,10 @@ def calculate_weighted_trend(group):
     trend_slope = numerator / denominator
     return trend_slope
 
-# グループ化して、トレンドスコア（傾き）を計算
-Trend_df = Matchup_df.groupby(['馬名_A', '馬名_B']).apply(
-    lambda x: pd.Series({
-        'Trend_Slope': calculate_weighted_trend(x)
-    }),
-    include_groups=False
-).reset_index()
-
-# ----------------------------------------------------
-# 3. Final_Pair_DFにトレンドスコアを結合
-# ----------------------------------------------------
-
-Final_Pair_df = pd.merge(Final_Pair_df, Trend_df, on=['馬名_A', '馬名_B'], how='left')
-
-# NaN値（対戦回数 < 3 のペア）を 0.0 で埋める（トレンドなしと見なす）
-Final_Pair_df['Trend_Slope'] = Final_Pair_df['Trend_Slope'].fillna(0.0)
-
 
 #====================================================
-# 総合ライバルスコアの算出とフィルタリング
+# ナラティブ抽出のためのプロンプトテンプレート
 #====================================================
-
-# ----------------------------------------------------
-# 1. 接戦度（Closeness）の計算
-# ----------------------------------------------------
-
-# 着順差の最大値（正規化のため）を計算。例: 1着〜18着なら最大17
-# ただし、データに存在する最大の着順差を使用するのがより現実的
-max_abs_order_diff = Final_Pair_df['Wtd_Order_Diff'].abs().max()
-
-# 正規化された着順差（0〜1）。小さいほど接戦。
-Final_Pair_df['Normalized_Closeness'] = Final_Pair_df['Wtd_Order_Diff'].abs() / max_abs_order_diff
-
-# 接戦度（Closeness Score）：差が小さいほど1に近づく
-Final_Pair_df['Closeness_Score'] = 1 - Final_Pair_df['Normalized_Closeness']
-
-# ----------------------------------------------------
-# 2. 継続度（Consistency）の計算
-# ----------------------------------------------------
-
-# 対戦総重み（Total_Weight）にLog関数を適用し、極端な値を丸める
-# log(1+x)を使うことで、Total_Weight=0の場合のエラーを防ぎ、0以上の値になるように調整
-Final_Pair_df['Consistency_Score'] = np.log1p(Final_Pair_df['Total_Weight']) 
-
-# ----------------------------------------------------
-# 3. 総合ライバルスコア（Rivalry Score）の算出
-# ----------------------------------------------------
-
-# 総合スコア = 接戦度 * 継続度
-Final_Pair_df['Rivalry_Score'] = (
-    Final_Pair_df['Closeness_Score'] * Final_Pair_df['Consistency_Score']
-)
-
-# ----------------------------------------------------
-# 4. フィルタリングとランキング
-# ----------------------------------------------------
-
-# 総対戦回数が少ないペアは除外する（例：最低3回以上の対戦）
-MIN_MATCHES = 3 
-Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES].copy()
-if len(Filtered_Pair_df) <= 3:
-    Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 1].copy()
-
-if len(Filtered_Pair_df) <= 5:
-    Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 2].copy()
-
-if len(Filtered_Pair_df) == 0:
-    print('本レースにおいて、ライバル関係は確認されませんでした。')
-    g.rival = 0
-    os._exit(0)
-
-Filtered_Pair_df = Filtered_Pair_df.sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
-
-Final_Pair_df.to_sql('FinalPair', con=engine, if_exists = 'replace')
-
-
-#====================================================
-# SCENE_Ensemble分析（ナラティブ抽出）
-#====================================================
-
-# ----------------------------------------------------
-# 1. Filtered_Pair_DFの上位Nペアを取得
-# ----------------------------------------------------
-TOP_N = min(g.hr_num, len(Filtered_Pair_df))
-Top_Rival_Pairs = Filtered_Pair_df.head(TOP_N)
-
-# ライバル候補のペアリストを作成
-rival_pair_names = set()
-for index, row in Top_Rival_Pairs.iterrows():
-    # 馬名がアルファベット順になっているため、タプルでセットに追加
-    rival_pair_names.add(tuple(sorted((row['馬名_A'], row['馬名_B']))))
-
-# ----------------------------------------------------
-# 2. Top_Matchup_dfの作成
-# ----------------------------------------------------
-
-# Matchup_dfから、Top_Rival_Pairsに含まれる対戦履歴のみを抽出
-def is_top_rival_pair(row):
-    # 馬名の順序を気にせずペアが一致するか確認
-    pair = tuple(sorted((row['馬名_A'], row['馬名_B'])))
-    return pair in rival_pair_names
-
-# applyを使って、対象のペアのみをフィルタリング（データ量によっては時間がかかる可能性あり）
-Top_Matchup_df = Matchup_df[Matchup_df.apply(is_top_rival_pair, axis=1)].copy()
-
-# ----------------------------------------------------
-# 3. ペアごとのJSONデータ構造の作成
-# ----------------------------------------------------
-
-# Gemini APIに渡すための最終的なデータ構造
-analysis_input = {}
-
-for horse_a, horse_b in rival_pair_names:
-    # 常に馬名がアルファベット順になるようにフィルタリング
-    pair_matchup = Top_Matchup_df[
-        (Top_Matchup_df['馬名_A'] == horse_a) & (Top_Matchup_df['馬名_B'] == horse_b)
-    ].sort_values(by='日付')
-    
-    if pair_matchup.empty:
-        # A, Bの定義が逆の場合を考慮し、再度フィルタリング
-        pair_matchup = Top_Matchup_df[
-            (Top_Matchup_df['馬名_A'] == horse_b) & (Top_Matchup_df['馬名_B'] == horse_a)
-        ].sort_values(by='日付')
-        
-        # この場合、AとBの指標を入れ替える必要があるが、ここでは処理を簡略化するため、
-        # Matchup_DFの作成時に順序を厳密に定義している前提で進めます。
-        # 実際の実装では、ここでAとBの指標を入れ替える処理が必要です。
-        
-        # 今回のコードでは、Matchup_DF作成時に (A < B) の順序を保証しているため、最初のフィルタリングで全て取得されます。
-        pass 
-        
-    # ペアごとの詳細な対戦履歴を作成
-    race_details = []
-    for index, row in pair_matchup.iterrows():
-        race_details.append({
-            "date": row['日付'].strftime('%Y-%m-%d'),
-            "race_name": row['レース名'],
-            "track": row['TD'],
-            "distance": row['距離'],
-            "A_order": row['着順_A'],
-            "B_order": row['着順_B'],
-            "order_diff": row['Order_Diff'],
-            "time_diff": row['Time_Diff'],
-            "A_age": row['年齢_A'],
-            "B_age": row['年齢_B']
-        })
-    
-    # Final_Pair_dfから総合スコアとトレンドを取得
-    score_data = Filtered_Pair_df[
-        (Filtered_Pair_df['馬名_A'] == horse_a) & (Filtered_Pair_df['馬名_B'] == horse_b)
-    ].iloc[0]
-    
-    # 最終的な入力構造
-    analysis_input[f"{horse_a}_vs_{horse_b}"] = {
-        "summary_scores": {
-            "total_matches": score_data['Total_Matches'],
-            "rivalry_score": score_data['Rivalry_Score'],
-            "wtd_win_rate_A": score_data['Wtd_Win_Rate'],
-            "wtd_order_diff_A": score_data['Wtd_Order_Diff'],
-            "trend_slope_A": score_data['Trend_Slope'] # 馬Aが優位になる傾向
-        },
-        "race_history": race_details
-    }
-
-
-# ----------------------------------------------------------------------
-# 4. ナラティブ抽出のためのプロンプトテンプレート
-# ----------------------------------------------------------------------
 
 def create_json_analysis_prompt(horse_a_name, horse_b_name, data_json):
     """ライバル分析のためのシステム指示と、JSON出力を求めるユーザープロンプトを生成する"""
@@ -536,9 +198,9 @@ def create_json_analysis_prompt(horse_a_name, horse_b_name, data_json):
     return system_instruction, user_prompt
 
 
-# ----------------------------------------------------
-# 5. 並列処理のためのAPI呼び出し関数
-# ----------------------------------------------------
+#====================================================
+# 並列処理のためのAPI呼び出し関数
+#====================================================
 
 def analyze_single_pair(row, analysis_input, client, model):
     """単一のペアに対してAPIを呼び出し、分析結果を返す"""
@@ -582,9 +244,10 @@ def analyze_single_pair(row, analysis_input, client, model):
         'Narrative_JSON': narrative_json
     }
 
-# ----------------------------------------------------
-# 6. メインの並列実行ループ
-# ----------------------------------------------------
+
+#====================================================
+# メインの並列実行ループ
+#====================================================
 
 def run_parallel_analysis(df, analysis_input, client, model, max_workers=5):
     """DataFrameの各行に対して並列にAPI分析を実行する"""
@@ -621,40 +284,12 @@ def run_parallel_analysis(df, analysis_input, client, model, max_workers=5):
 
     return pd.DataFrame(analysis_results)
 
-# ----------------------------------------------------
-# 7. メインのAPI実行
-# ----------------------------------------------------
-
-# 並列実行 (例: 5並列)
-MAX_WORKERS = 5
-Analysis_Result_DF_Parallel = run_parallel_analysis(
-    Filtered_Pair_df,
-    analysis_input,
-    client,
-    MODEL,
-    max_workers=MAX_WORKERS
-)
-
-# ----------------------------------------------------
-# 8. 結果の整理と結合
-# ----------------------------------------------------
-
-# Final_Rival_Analysis_DFを作成 (定量スコア + 定性分析結果)
-Final_Rival_Analysis_df = pd.merge(
-    Filtered_Pair_df,
-    Analysis_Result_DF_Parallel.drop(columns=['Analysis_Status']), 
-    on=['馬名_A', '馬名_B'],
-    how='left'
-)
-
 
 #====================================================
-# 最終ライバル候補トップリストの提示
+# JSONデータのパース関数
 #====================================================
 
-# ----------------------------------------------------
-# 1. JSONから展開するキーのリストを定義
-# ----------------------------------------------------
+# JSONから展開するキーのリストを定義
 new_columns = [
     'conclusion_type', 
     'narrative_summary', 
@@ -663,13 +298,10 @@ new_columns = [
     'dominance_reason'
 ]
 
-# ----------------------------------------------------
-# 2. JSONデータのパース関数
-# ----------------------------------------------------
 def parse_narrative_json(json_str):
     """
     JSONパースを試行し、失敗した場合はすべてのカラムにエラー情報を返す。
-    """
+    """    
     global new_columns 
     
     if pd.isna(json_str) or not isinstance(json_str, str):
@@ -701,57 +333,377 @@ def parse_narrative_json(json_str):
             'dominance_reason': 'N/A'
         }
 
-# ----------------------------------------------------
-# 3. 最終リスト作成コードの再実行（構造の強化）
-# ----------------------------------------------------
 
-# JSONデータをDFに展開
-# 戻り値は辞書のシリーズ
-Narrative_Series = Final_Rival_Analysis_df['Narrative_JSON'].apply(parse_narrative_json)
+#====================================================
+# SCENE_Ensemble分析実行
+#====================================================
 
-# 辞書のシリーズを明示的にDataFrameに変換
-Narrative_Expanded_df = pd.DataFrame(Narrative_Series.tolist(), index=Final_Rival_Analysis_df.index)
+def SCENE_Ensemble_Analysis():
 
-# 最終的な統合DFを作成
-Final_List_df = pd.concat([
-    # ★★★ 修正箇所: Average_Popularity_Score を追加 ★★★
-    Final_Rival_Analysis_df[['馬名_A', '馬名_B', 'Rivalry_Score', 'Total_Matches', 'Wtd_Order_Diff', 'Average_Popularity_Score']],
-    Narrative_Expanded_df
-], axis=1).sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
+    # ライバル関係抽出
+    HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
+    SCENE_Cast_df = pd.read_sql('SELECT * FROM "SCENE_Cast"', con=engine)
+    SCENE_Ensemble_df = SCENE_Cast_df
 
-# ----------------------------------------------------
-# 4. 「人気度優先」でDFを並べ替えてトップ10を抽出
-# ----------------------------------------------------
+    # 日付とレース名の結合
+    HorseRecords_df['Race_Key'] = HorseRecords_df['日付'].dt.strftime('%Y-%m-%d') + "_" + HorseRecords_df['レース名']
 
-# abs(Wtd_Order_Diff) をソート用に計算
-Final_List_df['Abs_Order_Diff'] = Final_List_df['Wtd_Order_Diff'].abs()
+    # Matchup_dfの作成
+    Matchup_df = create_matchup_df(HorseRecords_df)
+    Matchup_df.to_sql('Matchup', con=engine, if_exists = 'replace', index=False)
 
-# 人気度優先ソート基準を適用:
-# 1. Average_Popularity_Score (昇順, 数値が小さい＝人気が高い)
-# 2. Abs_Order_Diff (昇順, 互角なほど上位)
-# 3. Rivalry_Score (降順, ドラマ性が高いほど上位)
-Final_List_df_Sorted_Popular = Final_List_df.sort_values(
-    by=['Average_Popularity_Score', 'Abs_Order_Diff', 'Rivalry_Score'],
-    ascending=[True, True, False] # True=昇順 (人気/互角), False=降順 (ドラマ性)
-).reset_index(drop=True)
 
-TOP_N_RIVALS = 10 # 件数は10を維持
-Top_Rival_List_df = Final_List_df_Sorted_Popular.head(TOP_N_RIVALS).copy()
+    #====================================================
+    # マッチアップのスコアリング（時間軸考慮）
+    #====================================================
 
-narrative_list = []
+    # 1. 時間差（Time Delta）の計算
+    # 現在の分析対象となる「基準日」を設定
+    # 通常はデータセット内の最新の日付を基準とする。
+    current_date = Matchup_df['日付'].max()
 
-for i, row in Top_Rival_List_df.iterrows():
-    # テンプレートを定義（インデントは無視されるように .replace や .strip を活用）
-    template = (
-        f"【ライバル注目度: 第{i+1}位：{row['馬名_A']} vs {row['馬名_B']}】\n"
-        f"関係性: {row['conclusion_type']}\n"
-        f"優位性: {row['current_dominance']}（{row['dominance_reason']}）\n"
-        f"転機: {row['turning_point_race']}\n"
-        f"総評: {row['narrative_summary']}"
+    # 基準日から各レース日までの「経過日数」を計算
+    Matchup_df['Days_Since_Race'] = (current_date - Matchup_df['日付']).dt.days
+
+    # 2. 時間差の正規化、kパラメータ適用、時間軸の重み計算
+    # 経過日数を正規化し、[0, 1] の範囲に収める
+    # 最も古い対戦が 1.0、最も新しい（基準日と同じ）対戦が 0.0 になるようにする
+    max_days = Matchup_df['Days_Since_Race'].max()
+    Matchup_df['Normalized_Time_Diff'] = Matchup_df['Days_Since_Race'] / max_days
+
+    # 3. Matchup_dfに kパラメータを適用
+    Matchup_df['k_decay'] = Matchup_df.apply(
+        lambda row: get_decay_parameter(row['年齢_A'], row['年齢_B']),
+        axis=1
     )
-    narrative_list.append(template)
 
-Top_Rival_List_df['ライバル関係'] = narrative_list
+    # 4. 指数関数による時間軸の重み付けを計算
+    Matchup_df['W_time'] = np.exp(-Matchup_df['k_decay'] * Matchup_df['Normalized_Time_Diff'])
 
-Top_Rival_List_df.to_sql('SCENE_Ensemble', con=engine, if_exists = 'replace', index=False)
 
+    #====================================================
+    # 定常的スコアのための指標計算
+    #====================================================
+
+    # 1. 勝敗（Win_A）と着順差（Order_Diff）の計算
+    Matchup_df['Win_A'] = np.where(Matchup_df['着順_A'] < Matchup_df['着順_B'], 1, 0)
+    Matchup_df['Order_Diff'] = Matchup_df['着順_B'] - Matchup_df['着順_A']
+
+    # 2. 走破タイム差（Time_Diff）の計算
+    # Time_Diff > 0 なら Aの走破タイムがBより速い
+    Matchup_df['Time_Diff'] = Matchup_df['走破タイム_B'] - Matchup_df['走破タイム_A']
+
+    # 3. Ave-3Fタイム差（Ave3F_Diff）の計算
+    # Ave3F_Diff > 0 なら Aの前半平均速度相当タイムがBより速い
+    Matchup_df['Ave3F_Diff'] = Matchup_df['Ave-3F_B'] - Matchup_df['Ave-3F_A']
+
+    # 4. 上り3Fタイム差（Last3F_Diff）の計算
+    # Last3F_Diff > 0 なら Aの上り3FタイムがBより速い
+    Matchup_df['Last3F_Diff'] = Matchup_df['上り3F_B'] - Matchup_df['上り3F_A']
+
+
+    #====================================================
+    # 定常的ライバルスコアの集計
+    #====================================================
+
+    # 1. タイムパフォーマンス指標の統合 (Wtd_Time_Perfの準備)
+    # 複数のタイム差指標（Time_Diff, Ave3F_Diff, Last3F_Diff）を統合するスコアを作成
+    # ここでは、単純に平均を取ることで、全体、後半、前半のパフォーマンスを均等に評価
+    Matchup_df['Combined_Time_Perf'] = (
+        Matchup_df['Time_Diff'] + 
+        Matchup_df['Ave3F_Diff'] + 
+        Matchup_df['Last3F_Diff']
+    ) / 3
+
+    # 2. グループ化と重み付き集計
+    # グループ化するキー
+    group_keys = ['馬名_A', '馬名_B']
+
+    # 時間軸重み（W_time）の合計を計算
+    Total_Weight_df = Matchup_df.groupby(group_keys)['W_time'].sum().reset_index()
+    Total_Weight_df = Total_Weight_df.rename(columns={'W_time': 'Total_Weight'})
+
+    # 各指標の (指標 * 重み) の合計を計算するカスタム集計関数
+    # def weighted_sum(df, column):
+    #     return (df[column] * df['W_time']).sum()
+    # # --- 修正案 ---
+    def weighted_sum(df, column):
+        # NaNを0で埋める、あるいはその行を除外して重み付き合計を出す
+        valid_mask = df[column].notna()
+        return (df.loc[valid_mask, column] * df.loc[valid_mask, 'W_time']).sum()
+
+    # 重み付き集計
+    Wtd_Sum_df = Matchup_df.groupby(group_keys).apply(
+        lambda x: pd.Series({
+            # 勝利数（Win_A）の重み付き合計
+            'Sum_Wtd_Win_A': weighted_sum(x, 'Win_A'),
+            # 着順差（Order_Diff）の重み付き合計
+            'Sum_Wtd_Order_Diff': weighted_sum(x, 'Order_Diff'),
+            # 統合タイムパフォーマンスの重み付き合計
+            'Sum_Wtd_Time_Perf': weighted_sum(x, 'Combined_Time_Perf'),
+            
+            # 新規追加: ペアの人気度の合計（人気度の重み付けはしない）
+            # 人気度は時間とともに変動する指標ですが、ここではシンプルに「対戦時の人気」の合計を計算します。
+            'Sum_Popularity_A': x['人気_A'].sum(),
+            'Sum_Popularity_B': x['人気_B'].sum(),
+
+            # 総対戦回数 (今後のためにカウント)
+            'Total_Matches': len(x)
+        }),
+            include_groups=False
+    ).reset_index()
+
+    # 3. Final_Pair_DFの作成（重み付き平均の計算）
+    # 重み付き合計と総重みを結合
+    Pair_df = pd.merge(Wtd_Sum_df, Total_Weight_df, on=group_keys)
+
+    # 重み付き平均を計算
+    Pair_df['Wtd_Win_Rate'] = Pair_df['Sum_Wtd_Win_A'] / Pair_df['Total_Weight']
+    Pair_df['Wtd_Order_Diff'] = Pair_df['Sum_Wtd_Order_Diff'] / Pair_df['Total_Weight']
+    Pair_df['Wtd_Time_Perf'] = Pair_df['Sum_Wtd_Time_Perf'] / Pair_df['Total_Weight']
+
+    # 人気度の平均値（数値が小さいほど人気が高い）
+    # Total_Matches * 2 は、馬Aと馬Bの人気の総数
+    Pair_df['Average_Popularity_Score'] = (
+        Pair_df['Sum_Popularity_A'] + Pair_df['Sum_Popularity_B']
+    ) / (Pair_df['Total_Matches'] * 2) 
+
+    # 最終スコアとして必要なカラムを選択 (Average_Popularity_Scoreを追加)
+    Final_Pair_df = Pair_df[[
+        '馬名_A', '馬名_B', 'Total_Matches', 'Total_Weight', 
+        'Wtd_Win_Rate', 'Wtd_Order_Diff', 'Wtd_Time_Perf', 
+        'Average_Popularity_Score' # <- 追加
+    ]]
+
+
+    #====================================================
+    # 時間軸トレンドスコアの計算
+    #====================================================
+
+    # 1. 時間軸変数 'Days_From_Start' を作成
+    # 最も古い日付を取得
+    min_date = Matchup_df['日付'].min()
+
+    # 最も古い日付からの経過日数（これが時間軸変数 t になる）
+    Matchup_df['Days_From_Start'] = (Matchup_df['日付'] - min_date).dt.days
+
+    # 2. 時間軸トレンドスコアの計算
+    # グループ化して、トレンドスコア（傾き）を計算
+    Trend_df = Matchup_df.groupby(['馬名_A', '馬名_B']).apply(
+        lambda x: pd.Series({
+            'Trend_Slope': calculate_weighted_trend(x)
+        }),
+        include_groups=False
+    ).reset_index()
+
+    # 3. Final_Pair_DFにトレンドスコアを結合
+    Final_Pair_df = pd.merge(Final_Pair_df, Trend_df, on=['馬名_A', '馬名_B'], how='left')
+
+    # NaN値（対戦回数 < 3 のペア）を 0.0 で埋める（トレンドなしと見なす）
+    Final_Pair_df['Trend_Slope'] = Final_Pair_df['Trend_Slope'].fillna(0.0)
+
+
+    #====================================================
+    # 総合ライバルスコアの算出とフィルタリング
+    #====================================================
+
+    # 1. 接戦度（Closeness）の計算
+    # 着順差の最大値（正規化のため）を計算。例: 1着〜18着なら最大17
+    # ただし、データに存在する最大の着順差を使用するのがより現実的
+    max_abs_order_diff = Final_Pair_df['Wtd_Order_Diff'].abs().max()
+
+    # 正規化された着順差（0〜1）。小さいほど接戦。
+    Final_Pair_df['Normalized_Closeness'] = Final_Pair_df['Wtd_Order_Diff'].abs() / max_abs_order_diff
+
+    # 接戦度（Closeness Score）：差が小さいほど1に近づく
+    Final_Pair_df['Closeness_Score'] = 1 - Final_Pair_df['Normalized_Closeness']
+
+    # 2. 継続度（Consistency）の計算
+    # 対戦総重み（Total_Weight）にLog関数を適用し、極端な値を丸める
+    # log(1+x)を使うことで、Total_Weight=0の場合のエラーを防ぎ、0以上の値になるように調整
+    Final_Pair_df['Consistency_Score'] = np.log1p(Final_Pair_df['Total_Weight']) 
+
+    # 3. 総合ライバルスコア（Rivalry Score）の算出
+    # 総合スコア = 接戦度 * 継続度
+    Final_Pair_df['Rivalry_Score'] = (
+        Final_Pair_df['Closeness_Score'] * Final_Pair_df['Consistency_Score']
+    )
+
+    # 4. フィルタリングとランキング
+    # 総対戦回数が少ないペアは除外する（例：最低3回以上の対戦）
+    MIN_MATCHES = 3 
+    Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES].copy()
+    if len(Filtered_Pair_df) <= 3:
+        Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 1].copy()
+
+    if len(Filtered_Pair_df) <= 5:
+        Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 2].copy()
+
+    if len(Filtered_Pair_df) == 0:
+        print('本レースにおいて、ライバル関係は確認されませんでした。')
+        g.rival = 0
+        os._exit(0)
+
+    Filtered_Pair_df = Filtered_Pair_df.sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
+
+    #====================================================
+    # SCENE_Ensemble分析（ナラティブ抽出）
+    #====================================================
+
+    # Filtered_Pair_DFの上位Nペアを取得
+    TOP_N = min(g.hr_num, len(Filtered_Pair_df))
+    Top_Rival_Pairs = Filtered_Pair_df.head(TOP_N)
+
+    # ライバル候補のペアリストを作成
+    rival_pair_names = set()
+    for index, row in Top_Rival_Pairs.iterrows():
+        # 馬名がアルファベット順になっているため、タプルでセットに追加
+        rival_pair_names.add(tuple(sorted((row['馬名_A'], row['馬名_B']))))
+
+    # Top_Matchup_dfの作成
+    # Matchup_dfから、Top_Rival_Pairsに含まれる対戦履歴のみを抽出
+    def is_top_rival_pair(row):
+        # 馬名の順序を気にせずペアが一致するか確認
+        pair = tuple(sorted((row['馬名_A'], row['馬名_B'])))
+        return pair in rival_pair_names
+
+    # applyを使って、対象のペアのみをフィルタリング（データ量によっては時間がかかる可能性あり）
+    Top_Matchup_df = Matchup_df[Matchup_df.apply(is_top_rival_pair, axis=1)].copy()
+
+    # ペアごとのJSONデータ構造の作成
+    # Gemini APIに渡すための最終的なデータ構造
+    analysis_input = {}
+
+    for horse_a, horse_b in rival_pair_names:
+        # 常に馬名がアルファベット順になるようにフィルタリング
+        pair_matchup = Top_Matchup_df[
+            (Top_Matchup_df['馬名_A'] == horse_a) & (Top_Matchup_df['馬名_B'] == horse_b)
+        ].sort_values(by='日付')
+        
+        if pair_matchup.empty:
+            # A, Bの定義が逆の場合を考慮し、再度フィルタリング
+            pair_matchup = Top_Matchup_df[
+                (Top_Matchup_df['馬名_A'] == horse_b) & (Top_Matchup_df['馬名_B'] == horse_a)
+            ].sort_values(by='日付')
+            
+            # この場合、AとBの指標を入れ替える必要があるが、ここでは処理を簡略化するため、
+            # Matchup_DFの作成時に順序を厳密に定義している前提で進めます。
+            # 実際の実装では、ここでAとBの指標を入れ替える処理が必要です。
+            
+            # 今回のコードでは、Matchup_DF作成時に (A < B) の順序を保証しているため、最初のフィルタリングで全て取得されます。
+            pass 
+            
+        # ペアごとの詳細な対戦履歴を作成
+        race_details = []
+        for index, row in pair_matchup.iterrows():
+            race_details.append({
+                "date": row['日付'].strftime('%Y-%m-%d'),
+                "race_name": row['レース名'],
+                "track": row['TD'],
+                "distance": row['距離'],
+                "A_order": row['着順_A'],
+                "B_order": row['着順_B'],
+                "order_diff": row['Order_Diff'],
+                "time_diff": row['Time_Diff'],
+                "A_age": row['年齢_A'],
+                "B_age": row['年齢_B']
+            })
+        
+        # Final_Pair_dfから総合スコアとトレンドを取得
+        score_data = Filtered_Pair_df[
+            (Filtered_Pair_df['馬名_A'] == horse_a) & (Filtered_Pair_df['馬名_B'] == horse_b)
+        ].iloc[0]
+        
+        # 最終的な入力構造
+        analysis_input[f"{horse_a}_vs_{horse_b}"] = {
+            "summary_scores": {
+                "total_matches": score_data['Total_Matches'],
+                "rivalry_score": score_data['Rivalry_Score'],
+                "wtd_win_rate_A": score_data['Wtd_Win_Rate'],
+                "wtd_order_diff_A": score_data['Wtd_Order_Diff'],
+                "trend_slope_A": score_data['Trend_Slope'] # 馬Aが優位になる傾向
+            },
+            "race_history": race_details
+        }
+
+
+    #====================================================
+    # メインのAPI実行
+    #====================================================
+
+    # 並列実行 (例: 5並列)
+    MAX_WORKERS = 5
+    Analysis_Result_DF_Parallel = run_parallel_analysis(
+        Filtered_Pair_df,
+        analysis_input,
+        client,
+        MODEL,
+        max_workers=MAX_WORKERS
+    )
+
+    # 結果の整理と結合
+    # Final_Rival_Analysis_DFを作成 (定量スコア + 定性分析結果)
+    Final_Rival_Analysis_df = pd.merge(
+        Filtered_Pair_df,
+        Analysis_Result_DF_Parallel.drop(columns=['Analysis_Status']), 
+        on=['馬名_A', '馬名_B'],
+        how='left'
+    )
+
+
+    #====================================================
+    # 最終ライバル候補トップリストの提示
+    #====================================================
+
+    # 最終リスト作成コードの再実行（構造の強化）
+    # JSONデータをDFに展開
+    # 戻り値は辞書のシリーズ
+    Narrative_Series = Final_Rival_Analysis_df['Narrative_JSON'].apply(parse_narrative_json)
+
+    # 辞書のシリーズを明示的にDataFrameに変換
+    Narrative_Expanded_df = pd.DataFrame(Narrative_Series.tolist(), index=Final_Rival_Analysis_df.index)
+
+    # 最終的な統合DFを作成
+    Final_List_df = pd.concat([
+        # ★★★ 修正箇所: Average_Popularity_Score を追加 ★★★
+        Final_Rival_Analysis_df[['馬名_A', '馬名_B', 'Rivalry_Score', 'Total_Matches', 'Wtd_Order_Diff', 'Average_Popularity_Score']],
+        Narrative_Expanded_df
+    ], axis=1).sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
+
+    # 「人気度優先」でDFを並べ替えてトップ10を抽出
+    # abs(Wtd_Order_Diff) をソート用に計算
+    Final_List_df['Abs_Order_Diff'] = Final_List_df['Wtd_Order_Diff'].abs()
+
+    # 人気度優先ソート基準を適用:
+    # 1. Average_Popularity_Score (昇順, 数値が小さい＝人気が高い)
+    # 2. Abs_Order_Diff (昇順, 互角なほど上位)
+    # 3. Rivalry_Score (降順, ドラマ性が高いほど上位)
+    Final_List_df_Sorted_Popular = Final_List_df.sort_values(
+        by=['Average_Popularity_Score', 'Abs_Order_Diff', 'Rivalry_Score'],
+        ascending=[True, True, False] # True=昇順 (人気/互角), False=降順 (ドラマ性)
+    ).reset_index(drop=True)
+
+    TOP_N_RIVALS = 10 # 件数は10を維持
+    Top_Rival_List_df = Final_List_df_Sorted_Popular.head(TOP_N_RIVALS).copy()
+
+    narrative_list = []
+
+    for i, row in Top_Rival_List_df.iterrows():
+        # テンプレートを定義（インデントは無視されるように .replace や .strip を活用）
+        template = (
+            f"【ライバル注目度: 第{i+1}位：{row['馬名_A']} vs {row['馬名_B']}】\n"
+            f"関係性: {row['conclusion_type']}\n"
+            f"優位性: {row['current_dominance']}（{row['dominance_reason']}）\n"
+            f"転機: {row['turning_point_race']}\n"
+            f"総評: {row['narrative_summary']}"
+        )
+        narrative_list.append(template)
+
+    Top_Rival_List_df['ライバル関係'] = narrative_list
+
+    Top_Rival_List_df.to_sql('SCENE_Ensemble', con=engine, if_exists = 'replace', index=False)
+
+
+if __name__ == "__main__":
+
+    SCENE_Ensemble_Analysis()
