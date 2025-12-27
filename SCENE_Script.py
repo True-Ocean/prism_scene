@@ -1,6 +1,7 @@
 #===================================================================
 # プリズム・シーン理論（PRISM-SCENE Theory）
 # SCENE分析（Systematic Character Extraction for Narrative Epilogue）
+# SCENE_Script分析
 #===================================================================
 
 #====================================================
@@ -101,4 +102,3 @@ def SCENE_Script():
 if __name__ == "__main__":
     
     SCENE_Script_df = SCENE_Script()
-    print(SCENE_Script_df['特徴'][4])
