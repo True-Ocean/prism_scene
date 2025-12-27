@@ -43,7 +43,7 @@ api_key = os.getenv('GEMINI_API_KEY')
 client = genai.Client(api_key=api_key) 
 MODEL = "gemini-2.5-flash" # 高速モデルを維持
 
-print("APIクライアント初期化完了。（モデル: gemini-2.5-flash）")
+print("APIクライアント初期化完了（モデル: gemini-2.5-flash）")
 
 
 #====================================================
@@ -209,13 +209,13 @@ def process_all_horses_parallel(df, max_workers=5):
     max_workers: 同時に実行するスレッド数（Geminiの無料枠なら5〜8程度が安定）
     """
     # 重複防止 (既存のカラムがあれば消す) 
-    target_cols = ['血統分析', 'キャラ設定', '自己紹介', '血統情報']
+    target_cols = ['血統分析', 'キャラ設定', '自己紹介']
     df = df.drop(columns=[c for c in target_cols if c in df.columns], errors='ignore')
     
     # 1頭分の処理をラップする関数
     def task(row_data):
         idx, row = row_data
-        print(f"{row['馬名']}のPRISM_Cast分析を開始しました。")
+        print(f" 🐎{row['馬名']}の分析開始...")
         result = analyze_single_horse(
             features_text=row['特徴'],
             blood_text=row['血統情報'],
@@ -223,14 +223,14 @@ def process_all_horses_parallel(df, max_workers=5):
         )
         if result:
             result['馬名'] = row['馬名']
-            print(f"{row['馬名']}のPRISM_Cast分析が完了しました。")
+            print(f" ⭕️{row['馬名']}の分析完了")
             return result
         else:
-            print(f"{row['馬名']}のPRISM_Cast分析が失敗しました。")
+            print(f" ⚠️{row['馬名']}の分析失敗")
             return None
 
     # 並列実行の開始
-    print(f"SCENE_Cast分析の並列処理を開始します（同時実行数: {max_workers}）...")
+    print(f"--- SCENE_Cast分析の並列処理を開始します（同時実行数: {max_workers}）... ---")
     results = []
     
     # rowをリスト化して渡す
@@ -245,28 +245,33 @@ def process_all_horses_parallel(df, max_workers=5):
     
     # 元のデータフレームに結合
     final_df = pd.merge(df, res_df, on='馬名', how='left')
+
+    print(f"--- SCENE_Cast分析の並列処理を完了しました。 ---")
+
     return final_df
 
 #====================================================
 # SCENE_Cast分析の実行
 #====================================================
 
-# 必要情報の収集
-Race_Info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name}'
-SCENE_Script_df = pd.read_sql('SELECT * FROM "SCENE_Script"', con=engine)
-SCENE_Cast_df = SCENE_Script_df
+if __name__ == "__main__":
 
-# HTMLファイルから抽出した血統情報の格納
-blood_info_list = []
-for i in range(g.hr_num):
-    blood_file = f'/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/Blood{(i+1):02d}.html'
-    file_text, used_encoding = read_text_with_fallback(blood_file)
-    cleaned_text = clean_html_for_analysis(file_text) 
-    blood_info_list.append(cleaned_text)
-SCENE_Cast_df['血統情報'] = blood_info_list
+    # 必要情報の収集
+    Race_Info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name}'
+    SCENE_Script_df = pd.read_sql('SELECT * FROM "SCENE_Script"', con=engine)
+    SCENE_Cast_df = SCENE_Script_df
 
-# 各馬のキャラ設定を実行
-SCENE_Cast_df = process_all_horses_parallel(SCENE_Cast_df, max_workers=8)
+    # HTMLファイルから抽出した血統情報の格納
+    blood_info_list = []
+    for i in range(g.hr_num):
+        blood_file = f'/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/Blood{(i+1):02d}.html'
+        file_text, used_encoding = read_text_with_fallback(blood_file)
+        cleaned_text = clean_html_for_analysis(file_text) 
+        blood_info_list.append(cleaned_text)
+    SCENE_Cast_df['血統情報'] = blood_info_list
 
-# 結果をPostgreSQLに保存
-SCENE_Cast_df.to_sql('SCENE_Cast', con=engine, if_exists='replace', index=False)
+    # 各馬のキャラ設定を実行
+    SCENE_Cast_df = process_all_horses_parallel(SCENE_Cast_df, max_workers=8)
+
+    # 結果をPostgreSQLに保存
+    SCENE_Cast_df.to_sql('SCENE_Cast', con=engine, if_exists='replace', index=False)
