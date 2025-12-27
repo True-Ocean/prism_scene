@@ -502,14 +502,14 @@ if __name__ == "__main__":
 
     # PRISM_Bの実行
     PRISM_B_df = PRISM_B_Analysis(RaceTable_df, HorseRecords_df, df_cw, df_hanro, g.race_date)
-    PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace')
+    PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace', index=False)
 
     # PRISM_RGの読み込み
     PRISM_RG_df = pd.read_sql(sql = f'SELECT * FROM "PRISM_RG";', con=engine)
 
     # PRISM_RGBの実行
     PRISM_RGB_df = Calculate_PRISM_RGB(PRISM_RG_df, PRISM_B_df)
-    PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace')
+    PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace', index=False)
 
     # PRISM_Bのビジュアル化実行
     PRISM_B_Visualization(PRISM_B_df, RaceTable_df)
