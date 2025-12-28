@@ -291,6 +291,7 @@ def assign_race_marks_advanced(final_df, ensemble_df):
 # 最終結果の世界線をファイナル・ドラマとして再現する（Gemini API利用）
 def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
     race_info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name} ({g.cond})'
+    scene_instruction = "、".join(g.selected_scenes)
     
     # 1. 統計データ
     stats_summary = final_report[['枠番', '番', '馬名', '平均着順', '勝率', '最高位']].to_string(index=False)
@@ -301,9 +302,17 @@ def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
     for _, row in cast_df.iterrows():
         tactical_context += (f"【{row['番']}番 {row['馬名']}】"
                              f"枠:{row['枠番']}, 脚質:{row['脚質']}, 先行指数:{row['先行指数']}, "
+                             f"安定度:{row['安定度']}, 中何週：{row['中何週']}週, 成長度：{row['調教成長ポイント']} ")
+
+    # 3. キャラデータ (心情やセリフに関係する情報を追加)
+    character_context = ""
+    # 必要なカラムを抽出
+    for _, row in cast_df.iterrows():
+        character_context += (f"【{row['番']}番 {row['馬名']}】"
+                             f"家柄:{row['血統分析']}, キャラ:{row['キャラ設定']}, "
                              f"背景:{row['自己紹介'][:60]}...\n") # 背景は要約してトークン節約
 
-    # 3. 因縁・ライバル
+    # 4. ライバル関係
     rivalry_context = "\n".join(ensemble_df['ライバル関係'].tolist())
 
     system_instruction = f"""
@@ -318,18 +327,21 @@ def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
         ・実況のテンポを意識し、冗長な表現を避けて、刻一刻と変わる情勢を熱く、しかし簡潔に描いてください。
 
         【構成】
-        1. 以下の9シーンに分けて物語を描いてください。
-        (1.ゲート前 2.スタート 3.1-2角 4.向正面 5.3角 6.4角 7.直線 8.ゴール 9.エピローグ)
+        1. 以下のシーンに分けて物語を描いてください。
+        {scene_instruction}
         2. 前半の位置どりで、必ず全ての馬の名前が1回は登場するようにしてください。
+        3. キャラデータとライバル関係を踏まえ、適宜、各馬同士の熱い想いや心の声を、セリフとして挿入してください。
 
-        
         【資料：運命の設計図（統計）】
         {stats_summary}
 
         【資料：戦術・能力データ】
         {tactical_context}
 
-        【資料：因縁とライバル】
+        【資料：キャラデータ】
+        {character_context}
+
+        【資料：ライバル関係】
         {rivalry_context}
         """
 
@@ -360,24 +372,29 @@ def generate_race_broadcast(final_story, final_report, g, client, model):
     horse_info = final_report[['番', '馬名']].to_string(index=False)
     race_header = f"{g.race_date} {g.stadium} {g.race_name} ({g.td}{g.distance}m / 馬場:{g.cond})"
 
+    # generate_race_broadcast の system_instruction を強化
     system_instruction = f"""
-        あなたはラジオNIKKEIのベテラン実況アナウンサーです。
-        情緒的な修飾語、比喩、馬の心理描写を**すべて排除**し、
-        「どの馬がどこにいるか」という視覚情報のみを短文で繋いでください。
-        """
+    あなたはラジオNIKKEIのベテラン実況アナウンサーです。
+    【厳禁事項】
+    ・馬のセリフ、内面の声（「」内の文章）は1文字たりとも出力しないでください。
+    ・「〜を燃やす」「〜の決意」といった情緒的な描写はすべてカットしてください。
+    ・「スタート！」「向正面」といった見出し、および ** による強調は不要です。
+    【推奨事項】
+    ・「先頭は〇〇、2番手〇〇」という事実のみを、句点で区切って短文で並べてください。
+    """
 
     user_prompt = f"""
         【実況執筆ルール：スピードと正確性】
         1. **秒数制限**: 全体の読み上げ文字数を「1000文字以内」に抑え、現実のレース時間（{g.distance/20}秒程度）に収まる分量にしてください。
         2. **導入**: 「{race_header}。各馬ゲートイン完了、スタートしました！」と、2秒で始めてください。
         3. **隊列描写の徹底**:         
-        - 序盤は「先頭は○番○○、2番手○番○○、内○番○○、外○番○○」という馬番と馬名を併用する形式を多用。
+        - 序盤は「先頭は〇番〇〇、2番手〇番〇〇、内〇番〇〇、外〇番〇〇」という馬番と馬名を併用する形式を多用。
         - 逃げ、先行が多い場合、スタート直後の先行争いを詳しめに描写。
-        - 中盤以降は「先頭は○○、2番手○○、内○○、外○○」と馬名のみの形式を多用。
+        - 中盤以降は「先頭は〇〇、2番手〇〇、内〇〇、外〇〇」と馬名のみの形式を多用。
         - 「〜が素晴らしい走り」「〜のドラマが」等の感想は一切不要。
         4. **後半（3角〜直線）の加速**: 
         - 1文を5文字〜15文字程度に短縮。
-        - 最終直線は「○○上がってきた！」「内から○○！」「外は○○！」「○○か、○○か、○○、○○、並んでゴール！」といった感じで馬名を連呼しつつ叩きつける表現に。
+        - 最終直線は「〇〇上がってきた！」「内から〇〇！」「外は〇〇！」「〇〇か、〇〇か、〇〇、〇〇、並んでゴール！」といった感じで馬名を連呼しつつ叩きつける表現に。
         5. **入線後**: 1着を確定させ、2着、3着と思われる馬を伝え、レース展開によって「接戦」「際どい」「圧勝」「快勝」等の表現で簡潔に。
 
         【データ参照】
@@ -424,20 +441,30 @@ def save_text_to_file(text, filename):
 # 競馬実況テキストから実況音声を生成（Microsoft edge_tts利用）
 async def save_race_audio(text, filename):
 
-    print(f"{g.race_name}：レース実況音声ファイル生成中...")
-
     # --- 1. テキストの徹底クリーニング ---
     # 文末にある「〇〇文字」というメタ情報を削除
     text = re.sub(r'\d+文字.*$', '', text)
     
-    # 読み間違い修正
-    text = text.replace("m", "メートル").replace("M", "メートル")
-    text = text.replace("先行馬", "せんこうば")
-    text = text.replace("内", "うち").replace("外", "そと")
-    text = text.replace("向こう正面", "むこうじょうめん")
-    text = text.replace("前目", "まえめ")
-    text = text.replace("大外", "おおそと")
-    text = text.replace("最内", "さいうち")
+    # 読み間違い修正用の辞書（メンテナンス性を高める）
+    replace_dict = {
+        "m": "メートル",
+        "M": "メートル",
+        "先行馬": "せんこうば",
+        "内": "うち",
+        "外": "そと",
+        "向正面": "むこうじょうめん",
+        "向こう正面": "むこうじょうめん",
+        "前目": "まえめ",
+        "大外": "おおそと",
+        "最内": "さいうち",
+        "末脚": "すえあし",
+        "好スタート": "こうスタート", 
+        "脚色": "あしいろ", 
+    }
+
+    # 一括置換の実行
+    for old, new in replace_dict.items():
+        text = text.replace(old, new)
 
     # 全体のクレンジング
     clean_text = re.sub(r'#+\s*\[?.*?\]?', '', text).replace('**', '').replace('---', '')
@@ -459,6 +486,7 @@ async def save_race_audio(text, filename):
     voice_name = "ja-JP-NanamiNeural" 
 
     if len(parts) == 2:
+        print(f"{g.race_name}：レース実況音声ファイル生成中...")
         comm1 = edge_tts.Communicate(parts[0], voice_name, rate="+30%", pitch="+2Hz")
         # クライマックスはより高く、情熱的に
         comm2 = edge_tts.Communicate(parts[1], voice_name, rate="+40%", pitch="+12Hz", volume="+50%")
@@ -472,12 +500,13 @@ async def save_race_audio(text, filename):
         if os.path.exists("temp_1.mp3"): os.remove("temp_1.mp3")
         if os.path.exists("temp_2.mp3"): os.remove("temp_2.mp3")
     else:
+        print(f"{g.race_name}：レース実況音声ファイル生成中...")
         comm = edge_tts.Communicate(clean_text, voice_name, rate="+30%", pitch="+5Hz")
         await comm.save(filename)
 
     print(Fore.YELLOW + f"{g.race_name}：レース実況音声ファイル生成完了" + Style.RESET_ALL)
 
-    return filename
+    return clean_text
 
 
 #====================================================
@@ -511,10 +540,14 @@ if __name__ == "__main__":
     save_drama_name = f'{save_dir_path}Final_Drama.txt'
     save_text_to_file(final_story, save_drama_name)
 
-    # レース実況テキスト生成
-    broadcast_script = generate_race_broadcast(final_story, final_report, g, client, MODEL)
-    save_broadcast_name = f'{save_dir_path}Broadcast.txt'
-    save_text_to_file(final_story, save_broadcast_name)
+    # レース実況テキスト生成（クレンジング前）
+    broadcast_script_draft = generate_race_broadcast(final_story, final_report, g, client, MODEL)
+
+    # 最終レース実況テキスト生成
+    mp3_name = f"{save_dir_path}Broadcast.mp3"
+    broadcast_script = asyncio.run(save_race_audio(broadcast_script_draft, mp3_name))
+    save_broadcast_name = f'{save_dir_path}Final_Broadcast.txt'
+    save_text_to_file(broadcast_script, save_broadcast_name)
 
     # レース実況音声ファイル保存
     mp3_name = f"{save_dir_path}Broadcast.mp3"
