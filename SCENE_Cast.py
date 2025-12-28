@@ -43,8 +43,6 @@ api_key = os.getenv('GEMINI_API_KEY')
 client = genai.Client(api_key=api_key) 
 MODEL = "gemini-2.5-flash" # 高速モデルを維持
 
-print("APIクライアント初期化完了（モデル: gemini-2.5-flash）")
-
 
 #====================================================
 # ５代血統表（HTMLファイル）を堅牢に読み込む関数
@@ -211,6 +209,9 @@ def process_all_horses_parallel(df, max_workers=5):
     # 重複防止 (既存のカラムがあれば消す) 
     target_cols = ['血統分析', 'キャラ設定', '自己紹介']
     df = df.drop(columns=[c for c in target_cols if c in df.columns], errors='ignore')
+
+    # レース情報の取得
+    Race_Info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name}'
     
     # 1頭分の処理をラップする関数
     def task(row_data):
@@ -230,7 +231,7 @@ def process_all_horses_parallel(df, max_workers=5):
             return None
 
     # 並列実行の開始
-    print(f"--- SCENE_Cast分析の並列処理を開始します（同時実行数: {max_workers}）... ---")
+    print(f"SCENE_Cast分析の並列処理を開始します（同時実行数: {max_workers}）...")
     results = []
     
     # rowをリスト化して渡す
@@ -246,8 +247,6 @@ def process_all_horses_parallel(df, max_workers=5):
     # 元のデータフレームに結合
     final_df = pd.merge(df, res_df, on='馬名', how='left')
 
-    print(f"--- SCENE_Cast分析の並列処理を完了しました。 ---")
-
     return final_df
 
 #====================================================
@@ -257,7 +256,6 @@ def process_all_horses_parallel(df, max_workers=5):
 if __name__ == "__main__":
 
     # 必要情報の収集
-    Race_Info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name}'
     SCENE_Script_df = pd.read_sql('SELECT * FROM "SCENE_Script"', con=engine)
     SCENE_Cast_df = SCENE_Script_df
 

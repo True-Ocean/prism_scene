@@ -46,8 +46,6 @@ api_key = os.getenv('GEMINI_API_KEY')
 client = genai.Client(api_key=api_key) 
 MODEL = "gemini-2.5-flash" # 高速モデルを維持
 
-print("APIクライアント初期化完了（モデル: gemini-2.5-flash）")
-
 
 #====================================================
 # Matchup_df作成関数
@@ -253,7 +251,7 @@ def run_parallel_analysis(df, analysis_input, client, model, max_workers=5):
     """DataFrameの各行に対して並列にAPI分析を実行する"""
     analysis_results = []
     
-    print(f"--- SCENE_Ensemble分析の並列処理を開始します: {len(df)} ペアを分析 (並列度: {max_workers}) ---")
+    print(f"SCENE_Ensemble分析の並列処理を開始します: {len(df)} ペアを分析 (並列度: {max_workers})")
     
     # ThreadPoolExecutorで並列処理を実行
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -338,18 +336,13 @@ def parse_narrative_json(json_str):
 # SCENE_Ensemble分析実行
 #====================================================
 
-def SCENE_Ensemble_Analysis():
-
-    # ライバル関係抽出
-    HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
-    SCENE_Cast_df = pd.read_sql('SELECT * FROM "SCENE_Cast"', con=engine)
-    SCENE_Ensemble_df = SCENE_Cast_df
+def SCENE_Ensemble_Analysis(horse_records_df):
 
     # 日付とレース名の結合
-    HorseRecords_df['Race_Key'] = HorseRecords_df['日付'].dt.strftime('%Y-%m-%d') + "_" + HorseRecords_df['レース名']
+    horse_records_df['Race_Key'] = horse_records_df['日付'].dt.strftime('%Y-%m-%d') + "_" + horse_records_df['レース名']
 
     # Matchup_dfの作成
-    Matchup_df = create_matchup_df(HorseRecords_df)
+    Matchup_df = create_matchup_df(horse_records_df)
     Matchup_df.to_sql('Matchup', con=engine, if_exists = 'replace', index=False)
 
 
@@ -703,6 +696,7 @@ def SCENE_Ensemble_Analysis():
 
     Top_Rival_List_df.to_sql('SCENE_Ensemble', con=engine, if_exists = 'replace', index=False)
 
+    return Top_Rival_List_df
 
 if __name__ == "__main__":
 
