@@ -413,14 +413,24 @@ if g.exe_opt in [3, 4]:
     save_drama_name = f'{save_dir_path}Final_drama.txt'
     SCENE.save_text_to_file(final_story, save_drama_name)
 
+    # レース実況テキスト生成（クレンジング前）
+    broadcast_script_draft = SCENE.generate_race_broadcast(final_story, final_report, g, client, MODEL)
+
     # レース実況テキスト生成
-    broadcast_script = SCENE.generate_race_broadcast(final_story, final_report, g, client, MODEL)
+    mp3_name = f"{save_dir_path}Broadcast.mp3"
+    broadcast_script = asyncio.run(SCENE.save_race_audio(broadcast_script_draft, mp3_name))
     save_broadcast_name = f'{save_dir_path}Broadcast.txt'
-    SCENE.save_text_to_file(final_story, save_broadcast_name)
+    SCENE.save_text_to_file(broadcast_script, save_broadcast_name)
+
 
     # レース実況音声ファイル保存
     mp3_name = f"{save_dir_path}Broadcast.mp3"
     asyncio.run(SCENE.save_race_audio(broadcast_script, mp3_name))
+
+    # アーカイブフォルダの設定
+    race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
+    # 作業用フォルダの設定
+    work_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 
     # SCENE分析で生成したデータをアーカイブフォルダにコピー
     shutil.copy(f'{work_dir}Final_Drama.txt', race_dir)
