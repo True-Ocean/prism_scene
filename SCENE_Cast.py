@@ -216,7 +216,6 @@ def process_all_horses_parallel(df, max_workers=5):
     # 1頭分の処理をラップする関数
     def task(row_data):
         idx, row = row_data
-        print(f" 🐎{row['馬名']}の分析開始...")
         result = analyze_single_horse(
             features_text=row['特徴'],
             blood_text=row['血統情報'],
@@ -224,7 +223,7 @@ def process_all_horses_parallel(df, max_workers=5):
         )
         if result:
             result['馬名'] = row['馬名']
-            print(f" ⭕️{row['馬名']}の分析完了")
+            print(f"  [完了] {row['馬名']}の分析完了")
             return result
         else:
             print(f" ⚠️{row['馬名']}の分析失敗")
