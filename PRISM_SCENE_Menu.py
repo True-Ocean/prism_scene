@@ -7,6 +7,7 @@
 # ライブラリの準備
 import os
 import sys
+import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -49,7 +50,7 @@ class RaceInfoApp:
         # アプリウィンドウ設定
         self.app = Tk()
         self.app.attributes('-topmost', True)
-        self.app.title('PRISM SCENE Analysis（プリズム・シーン分析） - ver 1.01β')
+        self.app.title('PRISM SCENE Analysis（プリズム・シーン分析） - ver.2.01')
         
         # Windows/Mac両方で見た目を安定させるためのスタイル設定
         self.style = ttk.Style()
@@ -93,64 +94,113 @@ class RaceInfoApp:
         self.var_distance = StringVar()
         self.var_cond = StringVar()
         self.var_exe_opt = IntVar(value=4)
+        self.scene_vars = {}
 
     def create_widgets(self):
-        """画面レイアウトの構築"""
-        # メインコンテナ
-        container = ttk.Frame(self.app, padding="15 15 15 15")
-        container.grid(row=0, column=0, sticky=(N, S, E, W))
-        self.app.columnconfigure(0, weight=1)
-        container.columnconfigure(0, weight=1)
+            """画面レイアウトの構築"""
+            # メインコンテナ
+            container = ttk.Frame(self.app, padding="15 15 15 15")
+            container.grid(row=0, column=0, sticky=(N, S, E, W))
+            self.app.columnconfigure(0, weight=1)
+            container.columnconfigure(0, weight=1)
 
-        # --- Section 1: 基本情報 ---
-        f1 = ttk.Labelframe(container, text=' レース基本情報 ', padding=10)
-        f1.grid(row=0, column=0, sticky='ew', pady=5)
-        for i in range(4): f1.columnconfigure(i, weight=1)
+            # --- Section 1: 基本情報 ---
+            f1 = ttk.Labelframe(container, text=' レース基本情報 ', padding=10)
+            f1.grid(row=0, column=0, sticky='ew', pady=5)
+            for i in range(4): f1.columnconfigure(i, weight=1)
 
-        ttk.Label(f1, text='日付', style='Pink.TLabel').grid(row=0, column=0, pady=2)
-        ttk.Entry(f1, textvariable=self.var_race_date, width=12, justify='center').grid(row=1, column=0, padx=5)
+            ttk.Label(f1, text='日付', style='Pink.TLabel').grid(row=0, column=0, pady=2)
+            ttk.Entry(f1, textvariable=self.var_race_date, width=12, justify='center').grid(row=1, column=0, padx=5)
 
-        ttk.Label(f1, text='競馬場', style='Pink.TLabel').grid(row=0, column=1, pady=2)
-        ttk.Combobox(f1, textvariable=self.var_stadium, width=6, values=['札幌','函館','福島','新潟','中山','東京','中京','京都','阪神','小倉'], justify='center').grid(row=1, column=1, padx=5)
+            ttk.Label(f1, text='競馬場', style='Pink.TLabel').grid(row=0, column=1, pady=2)
+            ttk.Combobox(f1, textvariable=self.var_stadium, width=6, values=['札幌','函館','福島','新潟','中山','東京','中京','京都','阪神','小倉'], justify='center').grid(row=1, column=1, padx=5)
 
-        ttk.Label(f1, text='レース番号', style='Pink.TLabel').grid(row=0, column=2, pady=2)
-        ttk.Combobox(f1, textvariable=self.var_r_num, width=5, values=[f'{i}R' for i in range(1, 13)], justify='center').grid(row=1, column=2, padx=5)
+            ttk.Label(f1, text='レース番号', style='Pink.TLabel').grid(row=0, column=2, pady=2)
+            ttk.Combobox(f1, textvariable=self.var_r_num, width=5, values=[f'{i}R' for i in range(1, 13)], justify='center').grid(row=1, column=2, padx=5)
 
-        ttk.Label(f1, text='レース名').grid(row=0, column=3, pady=2)
-        ttk.Entry(f1, textvariable=self.var_race_name, width=15, justify='center').grid(row=1, column=3, padx=5)
+            ttk.Label(f1, text='レース名').grid(row=0, column=3, pady=2)
+            ttk.Entry(f1, textvariable=self.var_race_name, width=15, justify='center').grid(row=1, column=3, padx=5)
 
-        # --- Section 2: レース条件 ---
-        f2 = ttk.Labelframe(container, text=' レース条件 ', padding=10)
-        f2.grid(row=1, column=0, sticky='ew', pady=5)
-        for i in range(5): f2.columnconfigure(i, weight=1)
+            # --- Section 2: レース条件 ---
+            f2 = ttk.Labelframe(container, text=' レース条件 ', padding=10)
+            f2.grid(row=1, column=0, sticky='ew', pady=5)
+            for i in range(5): f2.columnconfigure(i, weight=1)
 
-        cond_labels = [('年齢限定', self.var_age, ['２歳','３歳','３上','４上']),
-                       ('クラス', self.var_clas, ['Ｇ１','Ｇ２','Ｇ３', 'OP(L)', 'ｵｰﾌﾟﾝ','3勝','2勝','1勝', '未勝利']),
-                       ('トラック', self.var_td, ['芝','ダ']),
-                       ('距離', self.var_distance, ['1000','1150','1200','1300','1400','1500','1600','1700','1800','1900','2000','2100','2200','2300','2400','2500','2600','3000','3200','3400','3600']),
-                       ('馬場状態', self.var_cond, ['良','稍','重','不'])]
+            cond_labels = [('年齢限定', self.var_age, ['２歳','３歳','３上','４上']),
+                        ('クラス', self.var_clas, ['Ｇ１','Ｇ２','Ｇ３', 'OP(L)', 'ｵｰﾌﾟﾝ','3勝','2勝','1勝', '未勝利']),
+                        ('トラック', self.var_td, ['芝','ダ']),
+                        ('距離', self.var_distance, ['1000','1150','1200','1300','1400','1500','1600','1700','1800','1900','2000','2100','2200','2300','2400','2500','2600','3000','3200','3400','3600']),
+                        ('馬場状態', self.var_cond, ['良','稍','重','不'])]
 
-        for i, (label, var, vals) in enumerate(cond_labels):
-            l_style = 'Pink.TLabel' if label == '馬場状態' else 'TLabel'
-            ttk.Label(f2, text=label, style=l_style).grid(row=0, column=i, pady=2)
-            ttk.Combobox(f2, textvariable=var, values=vals, width=8, justify='center').grid(row=1, column=i, padx=3)
+            for i, (label, var, vals) in enumerate(cond_labels):
+                l_style = 'Pink.TLabel' if label == '馬場状態' else 'TLabel'
+                ttk.Label(f2, text=label, style=l_style).grid(row=0, column=i, pady=2)
+                ttk.Combobox(f2, textvariable=var, values=vals, width=8, justify='center').grid(row=1, column=i, padx=3)
 
-        # --- Section 3: 分析・実行オプション ---
-        f3 = ttk.Labelframe(container, text=' 分析・実行オプション選択 ', padding=10)
-        f3.grid(row=2, column=0, sticky='ew', pady=5)
+            # --- Section 3: 分析・実行オプション ---
+            f3 = ttk.Labelframe(container, text=' 分析・実行オプション選択 ', padding=10)
+            f3.grid(row=2, column=0, sticky='ew', pady=5)
 
-        opts = [ ('1. データ取得のみ実行', 1), ('2. PRISM分析のみ実行（既にデータ取得済であること！）', 2), ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), ('4. 全モジュール一括実行（データ取得・PRISM分析・SCENE分析）', 4)]
-        for i, (txt, val) in enumerate(opts):
-            ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
+            opts = [ ('1. データ取得のみ実行', 1), 
+                    ('2. PRISM分析のみ実行（既にデータ取得済であること！）', 2), 
+                    ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), 
+                    ('4. 全モジュール一括実行（データ取得・PRISM分析・SCENE分析）', 4)]
+            for i, (txt, val) in enumerate(opts):
+                ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
 
-        # --- Section 4: 実行ボタン ---
-        btn_frame = ttk.Frame(container, padding="0 10 0 0")
-        btn_frame.grid(row=3, column=0, sticky='ew')
-        btn_frame.columnconfigure(0, weight=1)
-        btn_frame.columnconfigure(1, weight=1)
+            # --- Section 4: シーン選択---
+            # 2列表示のチェックボックスの場合
+            # f4 = ttk.Labelframe(container, text=' シーン選択 ', padding=10)
+            # f4.grid(row=3, column=0, sticky='ew', pady=5)
+            # f4.columnconfigure(0, weight=1)
+            # f4.columnconfigure(1, weight=1)
 
-        ttk.Button(btn_frame, text='情報を更新', width=20, command=self.race_info_get).grid(row=0, column=0, padx=10, pady=10, sticky=E)
-        ttk.Button(btn_frame, text='分析スタート', width=20, style='Action.TButton', command=self.analysis_start).grid(row=0, column=1, padx=10, pady=10, sticky=W)
+            # 3列表示のチェックボックスの場合
+            f4 = ttk.Labelframe(container, text=' シーン選択 ', padding=10)
+            f4.grid(row=3, column=0, sticky='ew', pady=5)
+            
+            # 3列分の重みを設定
+            for col in range(3):
+                f4.columnconfigure(col, weight=1)
+
+
+            scene_opts = [ ('スタート', 0), ('最初の直線', 1), ('直線', 2), ('最初のコーナー', 3), 
+                                ('ホームストレッチ', 4), ('第1コーナー', 5), ('第2コーナー', 6), 
+                                ('向正面', 7), ('第3コーナー', 8), ('第4コーナー', 9), 
+                                ('最終直線', 10), ('ゴール', 11), ('エピローグ', 12)]
+                    
+            # デフォルトでチェックを入れたいIDのリスト
+            default_checked = [0, 8, 9, 10, 11, 12]
+            self.scene_vars = {}
+
+            for i, (txt, val) in enumerate(scene_opts):
+                # 現在のvalがリストにあれば True、なければ False を初期値にする
+                is_checked = True if val in default_checked else False
+                var = tk.BooleanVar(value=is_checked) 
+                
+                self.scene_vars[val] = var
+                
+                # # 2列配置の計算
+                # row_idx = i // 2
+                # col_idx = i % 2
+                
+                # ttk.Checkbutton(f4, text=txt, variable=var).grid(row=row_idx, column=col_idx, sticky=tk.W, padx=20, pady=1)
+
+                # 3列配置の計算
+                row_idx = i // 3  # 3個ごとに次の行へ
+                col_idx = i % 3   # 0, 1, 2 の繰り返し
+                
+                ttk.Checkbutton(f4, text=txt, variable=var).grid(row=row_idx, column=col_idx, sticky=tk.W, padx=10, pady=1)
+
+
+            # --- Section 5: 実行ボタン ---
+            btn_frame = ttk.Frame(container, padding="0 10 0 0")
+            btn_frame.grid(row=4, column=0, sticky='ew') # rowを4に変更
+            btn_frame.columnconfigure(0, weight=1)
+            btn_frame.columnconfigure(1, weight=1)
+
+            ttk.Button(btn_frame, text='情報を更新', width=20, command=self.race_info_get).grid(row=0, column=0, padx=10, pady=10, sticky=E)
+            ttk.Button(btn_frame, text='分析スタート', width=20, style='Action.TButton', command=self.analysis_start).grid(row=0, column=1, padx=10, pady=10, sticky=W)
 
     def race_info_get(self):
         """外部ファイルから情報を再読み込み"""
@@ -160,8 +210,40 @@ class RaceInfoApp:
         self.var_td.set(df.iat[0, 5]); self.var_distance.set(df.iat[0, 6])
         self.var_cond.set(df.iat[0, 7]); self.var_race_name.set(df.iat[0, 8])
 
-    def analysis_start(self):
+        # --- シーン選択の自動連動ロジック ---
+        dist = int(df.iat[0, 6])
+        
+        # 全レース共通の必須シーン
+        # 0:スタート, 10:最終直線, 11:ゴール, 12:エピローグ
+        target_scenes = [0, 10, 11, 12]
+        
+        if dist == 1000:
+            # 新潟千直
+            target_scenes += [2]
+        
+        elif dist <= 1400:
+            # 短距離：コーナーが少ないためシンプルに
+            target_scenes += [1, 8, 9] # 最初のコーナーと第3,第4コーナー
+        elif dist <= 1800:
+            # マイル〜中距離：向正面を含める
+            target_scenes += [1, 3, 7, 8, 9] 
+        elif dist <= 2200:
+            # 中距離（2000m以上）：ほぼ全ての展開を描写
+            target_scenes += [1, 3, 7, 8, 9]
+        else:
+            # 中距離（2000m以上）：ほぼ全ての展開を描写
+            target_scenes += [1, 3, 4, 5, 6, 7, 8, 9]
 
+        # UIのチェックボックスを更新
+        for val, var in self.scene_vars.items():
+            if val in target_scenes:
+                var.set(True)
+            else:
+                var.set(False)
+        
+        print(f"情報更新完了: {self.var_race_name.get()} (距離:{dist}m に合わせてシーンを最適化しました)")
+
+    def analysis_start(self):
         # 入力値の取得
         race_date = self.var_race_date.get()
         stadium = self.var_stadium.get()
@@ -173,8 +255,18 @@ class RaceInfoApp:
         clas = self.var_clas.get()
         cond = self.var_cond.get()
 
+        # --- シーン選択の結果を取得 ---
+        # シーンIDと名称の対応辞書
+        scene_map = {
+            0: 'スタート', 1: '最初の直線', 2: '直線', 3: '最初のコーナー',
+            4: 'ホームストレッチ', 5: '第1コーナー', 6: '第2コーナー',
+            7: '向正面', 8: '第3コーナー', 9: '第4コーナー',
+            10: '最終直線', 11: 'ゴール', 12: 'エピローグ'
+        }
+        # チェックされている名称だけをリスト化
+        selected_scenes = [scene_map[val] for val, var in self.scene_vars.items() if var.get()]
+
         # 必須入力チェック
-        # チェック対象をリスト化
         required_fields = {
             "日付": race_date,
             "競馬場": stadium,
@@ -189,34 +281,37 @@ class RaceInfoApp:
         empty_fields = [label for label, val in required_fields.items() if not str(val).strip()]
 
         if empty_fields:
-            # いずれかが空の場合、ターミナルに警告を表示して中断
             print(Fore.RED + "\n[入力エラー] 以下の項目が未入力です。")
             print(f"対象項目: {', '.join(empty_fields)}")
             print("全ての情報を入力してから「分析スタート」を押してください。" + Style.RESET_ALL)
-            return  # ここで処理を終了するため、下の破棄処理（destroy）は走らない
-        
+            return
+
+        # シーンが一つも選ばれていない場合の警告
+        if not selected_scenes:
+            print(Fore.RED + "\n[入力エラー] シーンが一つも選択されていません。" + Style.RESET_ALL)
+            return
+
         """終了処理とグローバル変数への代入"""
-        g.race_date = self.var_race_date.get()
-        g.stadium = self.var_stadium.get()
-        g.r_num = self.var_r_num.get()
-        g.race_name = self.var_race_name.get()
-        g.td = self.var_td.get()
-        val = self.var_distance.get()
-        g.distance = int(val)
-        g.age = self.var_age.get()
-        g.clas = self.var_clas.get()
-        g.cond = self.var_cond.get()
+        g.race_date = race_date
+        g.stadium = stadium
+        g.r_num = r_num
+        g.race_name = race_name
+        g.td = td
+        g.distance = int(distance_val)
+        g.age = age
+        g.clas = clas
+        g.cond = cond
         g.exe_opt = self.var_exe_opt.get()
+        
+        # --- シーンリストをグローバル変数に格納 ---
+        g.selected_scenes = selected_scenes
+        
         g.filename = f"{g.race_date}{g.stadium}{g.r_num}"
 
-        # --- 【重要】ここから確実に消すための処理 ---
-        # まずウィンドウを隠す
+        # --- ウィンドウ破棄処理 ---
         self.app.withdraw()
-        # OSに「隠した」ことを認識させるために強制更新
         self.app.update()
-        # ウィジェットを破棄
         self.app.destroy()
-        # メインループを終了
         self.app.quit()
 
     def run(self):
@@ -300,6 +395,9 @@ if __name__ == '__main__':
     RaceInfo_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceInfo.csv', index=False, encoding="utf-8")
     # postgreSQLに保存
     RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace')
+
+    # シーン選択表示
+    print(g.selected_scenes)
 
     print(Fore.YELLOW)
     print('今回のレース情報を取得しました。')
