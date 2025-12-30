@@ -428,10 +428,10 @@ def Horse_Training_Visualization(race_table_df, df_cw, df_hanro, target_race_dat
 
     # 各グラフの基準線(baseline)設定
     categories = [
-        {'title': '坂路：全体(4F)時計推移(最大1年)', 'type': 'h_time', 'filename': './Media_files/PRISM_B_Hanro_Time.png', 'y_range': h_t_range, 'x_type': 'date_dynamic', 'data': h_365, 'baseline': 57.5},
-        {'title': '坂路：Best3_Lap構成推移(14日)', 'type': 'h_lap', 'filename': './Media_files/PRISM_B_Hanro_Lap.png', 'y_range': lap_range, 'x_type': 'lap4', 'data': h_14, 'baseline': 14.0},
-        {'title': 'CW：全体(6F)時計推移(最大1年)', 'type': 'c_time', 'filename': './Media_files/PRISM_B_CW_Time.png', 'y_range': c_t_range, 'x_type': 'date_dynamic', 'data': c_365, 'baseline': 82.5},
-        {'title': 'CW：Best3_Lap構成推移(14日)', 'type': 'c_lap', 'filename': './Media_files/PRISM_B_CW_Lap.png', 'y_range': lap_range, 'x_type': 'lap6', 'data': c_14, 'baseline': 13.0}
+        {'title': '坂路(4F)時計推移(最大1年)', 'type': 'h_time', 'filename': './Media_files/PRISM_B_Hanro_Time.png', 'y_range': h_t_range, 'x_type': 'date_dynamic', 'data': h_365, 'baseline': 57.5},
+        {'title': '坂路時計ベスト3のラップ推移(14日)', 'type': 'h_lap', 'filename': './Media_files/PRISM_B_Hanro_Lap.png', 'y_range': lap_range, 'x_type': 'lap4', 'data': h_14, 'baseline': 14.0},
+        {'title': 'CW(6F)時計推移(最大1年)', 'type': 'c_time', 'filename': './Media_files/PRISM_B_CW_Time.png', 'y_range': c_t_range, 'x_type': 'date_dynamic', 'data': c_365, 'baseline': 82.5},
+        {'title': 'CW時計ベスト3のラップ推移(14日)', 'type': 'c_lap', 'filename': './Media_files/PRISM_B_CW_Lap.png', 'y_range': lap_range, 'x_type': 'lap6', 'data': c_14, 'baseline': 13.0}
     ]
 
     for cat in categories:

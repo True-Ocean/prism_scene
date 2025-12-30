@@ -341,7 +341,7 @@ def PRISM_G_Visualization(PRISM_RG_df):
             color='blue', fontsize=10, ha='left', va='center', fontweight='bold')
     
     # グラフの装飾
-    plt.title(f'PRISM_G 分析  {g.race_date} {g.stadium} {g.td} {g.distance}m {g.race_name} ({g.cond}))', fontsize=16, pad=20)
+    plt.title(f'PRISM_G 分析  {g.race_date} {g.stadium} {g.td} {g.distance}m {g.race_name} ({g.cond})', fontsize=16, pad=20)
     plt.xlabel('基礎能力（PRISM_R スコア）', fontsize=12)
     plt.ylabel('レース条件 (馬場状態・枠順・脚質・展開)適合率  %', fontsize=12)
     plt.grid(True, which='both', linestyle='--', alpha=0.4)

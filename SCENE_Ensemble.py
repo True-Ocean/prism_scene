@@ -251,7 +251,7 @@ def run_parallel_analysis(df, analysis_input, client, model, max_workers=5):
     """DataFrameの各行に対して並列にAPI分析を実行する"""
     analysis_results = []
     
-    print(f"SCENE_Ensemble分析の並列処理を開始します: {len(df)} ペアを分析 (並列度: {max_workers})")
+    print(f"SCENE_Ensemble分析の並列処理を開始します: {len(df)} ペアを分析 (同時実行数: {max_workers})")
     
     # ThreadPoolExecutorで並列処理を実行
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -278,7 +278,7 @@ def run_parallel_analysis(df, analysis_input, client, model, max_workers=5):
                     'Narrative_JSON': ''
                 })
 
-    print(f"--- SCENE_Ensemble分析の並列処理を完了しました。 ---")
+    print(f"SCENE_Ensemble分析の並列処理を完了しました。")
 
     return pd.DataFrame(analysis_results)
 
@@ -684,10 +684,10 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     for i, row in Top_Rival_List_df.iterrows():
         # テンプレートを定義（インデントは無視されるように .replace や .strip を活用）
         template = (
-            f"【ライバル注目度: 第{i+1}位：{row['馬名_A']} vs {row['馬名_B']}】\n"
-            f"関係性: {row['conclusion_type']}\n"
-            f"優位性: {row['current_dominance']}（{row['dominance_reason']}）\n"
-            f"転機: {row['turning_point_race']}\n"
+            f"【ライバル注目度: 第{i+1}位：{row['馬名_A']} vs {row['馬名_B']}】 \n"
+            f"関係性: {row['conclusion_type']} \n"
+            f"優位性: {row['current_dominance']}（{row['dominance_reason']}） \n"
+            f"転機: {row['turning_point_race']} \n"
             f"総評: {row['narrative_summary']}"
         )
         narrative_list.append(template)
@@ -695,6 +695,7 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     Top_Rival_List_df['ライバル関係'] = narrative_list
 
     Top_Rival_List_df.to_sql('SCENE_Ensemble', con=engine, if_exists = 'replace', index=False)
+    Top_Rival_List_df.to_csv('/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/SCENE_Ensemble.csv', index=False, encoding="utf-8")
 
     return Top_Rival_List_df
 

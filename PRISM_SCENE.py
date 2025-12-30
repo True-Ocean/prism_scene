@@ -356,6 +356,9 @@ if g.exe_opt in [3, 4]:
 
     # 結果をPostgreSQLに保存
     SCENE_Cast_df.to_sql('SCENE_Cast', con=engine, if_exists='replace', index=False)
+    # csvファイルとして保存
+    SCENE_Cast_df.to_csv('/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/SCENE_Cast.csv', index=False, encoding="utf-8")
+
 
     print(Fore.YELLOW)
     print('SCENE_Cast分析が完了しました!')
@@ -394,7 +397,7 @@ if g.exe_opt in [3, 4]:
     print('')
 
     # 生成データの保存先フォルダ
-    save_dir_path = f'/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
+    save_dir_path = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 
     # バックグラウンドシミュレーション実行
     all_ranks = SCENE.run_background_simulation_parallel(SCENE_Cast_df, SCENE_Ensemble_df, RaceTable_df, client, MODEL)
@@ -402,11 +405,14 @@ if g.exe_opt in [3, 4]:
     # 最終結果統合
     final_report = SCENE.run_final_aggregation(all_ranks, SCENE_Cast_df)
     final_report.to_sql('FinalReport', con=engine, if_exists = 'replace', index=False)
+    final_report.to_csv(f'{save_dir_path}Final_Report.csv', index=False, encoding="utf-8")
+
 
     # 馬印の付与
     final_df_with_marks = SCENE.assign_race_marks_advanced(final_report, SCENE_Ensemble_df)
     final_df_with_marks = final_df_with_marks[final_df_with_marks['印'] != ""][['印', '枠番', '番', '馬名']]
     final_df_with_marks.to_sql('FinalMark', con=engine, if_exists = 'replace', index=False)
+    final_df_with_marks.to_csv(f'{save_dir_path}Final_Mark.csv', index=False, encoding="utf-8")
 
     # ファイナル・ドラマ生成
     final_story = SCENE.generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
@@ -416,27 +422,32 @@ if g.exe_opt in [3, 4]:
     # レース実況テキスト生成（クレンジング前）
     broadcast_script_draft = SCENE.generate_race_broadcast(final_story, final_report, g, client, MODEL)
 
-    # レース実況テキスト生成
+    # 最終レース実況テキスト・音声の生成・保存
     mp3_name = f"{save_dir_path}Broadcast.mp3"
+    broadcast_name = f'{save_dir_path}Broadcast.txt'
     broadcast_script = asyncio.run(SCENE.save_race_audio(broadcast_script_draft, mp3_name))
-    save_broadcast_name = f'{save_dir_path}Broadcast.txt'
-    SCENE.save_text_to_file(broadcast_script, save_broadcast_name)
-
-
-    # レース実況音声ファイル保存
-    mp3_name = f"{save_dir_path}Broadcast.mp3"
-    asyncio.run(SCENE.save_race_audio(broadcast_script, mp3_name))
+    SCENE.save_text_to_file(broadcast_script, broadcast_name)
 
     # アーカイブフォルダの設定
     race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
     # 作業用フォルダの設定
-    work_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
+    work_dir = save_dir_path
 
     # SCENE分析で生成したデータをアーカイブフォルダにコピー
+    shutil.copy(f'{work_dir}SCENE_Cast.csv', race_dir)
+    shutil.copy(f'{work_dir}SCENE_Ensemble.csv', race_dir)
+    shutil.copy(f'{work_dir}Final_Report.csv', race_dir)
+    shutil.copy(f'{work_dir}Final_Mark.csv', race_dir)
     shutil.copy(f'{work_dir}Final_Drama.txt', race_dir)
     shutil.copy(f'{work_dir}Broadcast.txt', race_dir)
     shutil.copy(f'{work_dir}Broadcast.mp3', race_dir)
 
+if g.exe_opt in [3]:
+    print(Fore.RED)
+    print('SCENE分析が完了しました!')
+    print(Style.RESET_ALL)
+
+if g.exe_opt in [4]:
     print(Fore.RED)
     print('PRISM_SCENE分析が完了しました!')
     print(Style.RESET_ALL)

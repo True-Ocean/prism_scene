@@ -272,3 +272,4 @@ if __name__ == "__main__":
 
     # 結果をPostgreSQLに保存
     SCENE_Cast_df.to_sql('SCENE_Cast', con=engine, if_exists='replace', index=False)
+    SCENE_Cast_df.to_csv('/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/SCENE_Cast.csv', index=False, encoding="utf-8")

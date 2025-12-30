@@ -73,7 +73,7 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
         "提供されたデータに基づき、展開の紛れを含めた着順を算出してください。出力はJSONのみ。"
     )
 
-    print(f"バックグラウンド・シミュレーション開始 (並列数:{max_workers})")
+    print(f"バックグラウンド・シミュレーション開始 (同時実行数:{max_workers})")
 
     # 1回分のシミュレーションを実行する関数（スレッド用）
     def process_target_horse(row):
@@ -131,7 +131,7 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
             result = future.result()
             if result:
                 all_ranks.append(result)
-                print(f"  [完了] {horse_name} の世界線")
+                print(f" [完了] {horse_name} の世界線")
 
     print(Fore.YELLOW + f"バックグラウンド・シミュレーション完了 (計 {len(all_ranks)}件) " + Style.RESET_ALL)
     print('')
@@ -247,9 +247,21 @@ def assign_race_marks_advanced(final_df, ensemble_df):
     # 3. ▲ 単穴: 1着率が最も高い（印なしの馬から）
     remaining = df[mask_eligible & (df['印'] == "")]
     if not remaining.empty:
-        tan_ana_idx = remaining['win_rate'].idxmax()
-        if remaining.loc[tan_ana_idx, 'win_rate'] > 0:
+        # 勝率の最大値を確認
+        max_win_rate = remaining['win_rate'].max()
+        
+        if max_win_rate > 0:
+            # 勝率が0より大きい馬がいれば、その最大値の馬（複数いれば最初の馬）
+            tan_ana_idx = remaining[remaining['win_rate'] == max_win_rate].index[0]
             df.at[tan_ana_idx, '印'] = "▲ 単穴"
+        else:
+            # 全員勝率0.0%の場合、最下位の着順が最も大きい（派手に負けている）馬を選択
+            # （※もし「最下位が最もマシな馬」なら .min() に変更してください）
+            max_lowest_val = remaining['最下位'].max()
+            # 最大値を持つ馬のインデックスを確実に取得
+            potential_indices = remaining[remaining['最下位'] == max_lowest_val].index
+            if not potential_indices.empty:
+                df.at[potential_indices[0], '印'] = "▲ 単穴"
 
     # 5. △　ドラマ: ライバル関係が存在する馬を優先
     # ensemble_dfの「ライバル関係」に含まれる馬名を抽出
@@ -309,7 +321,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
     # 必要なカラムを抽出
     for _, row in cast_df.iterrows():
         character_context += (f"【{row['番']}番 {row['馬名']}】"
-                             f"家柄:{row['血統分析']}, キャラ:{row['キャラ設定']}, "
+                             f"家柄:{row['血統分析']}, キャラ:{row['キャラ設定']},  勝負服色:{row['勝負服色']}"
                              f"背景:{row['自己紹介'][:60]}...\n") # 背景は要約してトークン節約
 
     # 4. ライバル関係
@@ -322,15 +334,17 @@ def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
 
     user_prompt = f"""
         【重要：執筆および展開ルール】
-        ・文章の中に数値（平均着順、勝率、指数など）は出さず、描写に変換してください。
+        ・文章の中に指数の名称や数値（平均着順、勝率、指数など）は出さず、描写に変換してください。
         ・**先行指数が高い馬は序盤の主導権争いを描き、脚質（逃げ・先行・差し・追込）と枠番に応じた位置取りを正確に描写してください。**
         ・実況のテンポを意識し、冗長な表現を避けて、刻一刻と変わる情勢を熱く、しかし簡潔に描いてください。
+        ・キャラデータとライバル関係を踏まえ、適宜、各馬同士の熱い想いや心の声を、セリフとして挿入し、熱き戦いを描いてください。
 
         【構成】
-        1. 以下のシーンに分けて物語を描いてください。
+        1. 必ず以下のシーンに分けて、物語を描いてください。
         {scene_instruction}
         2. 前半の位置どりで、必ず全ての馬の名前が1回は登場するようにしてください。
-        3. キャラデータとライバル関係を踏まえ、適宜、各馬同士の熱い想いや心の声を、セリフとして挿入してください。
+        3. 第1コーナー、第2コーナー、第3コーナーでの描写は冗長にせず、シンプルにしてください。
+        4. 第4コーナーから最終直線は、各馬の動きを細かく描写しつつも、スピード感を出すために、体言止めを多用し、文量を抑えてください。
 
         【資料：運命の設計図（統計）】
         {stats_summary}
@@ -388,8 +402,9 @@ def generate_race_broadcast(final_story, final_report, g, client, model):
         1. **秒数制限**: 全体の読み上げ文字数を「1000文字以内」に抑え、現実のレース時間（{g.distance/20}秒程度）に収まる分量にしてください。
         2. **導入**: 「{race_header}。各馬ゲートイン完了、スタートしました！」と、2秒で始めてください。
         3. **隊列描写の徹底**:         
-        - 序盤は「先頭は〇番〇〇、2番手〇番〇〇、内〇番〇〇、外〇番〇〇」という馬番と馬名を併用する形式を多用。
+        - 序盤は「先頭は〇番〇〇、2番手〇番〇〇、内〇番〇〇、外〇番〇〇」という番と馬名を併用する形式（例：7番ディープインパクト）を多用。ただし、枠番は使わないこと。
         - 逃げ、先行が多い場合、スタート直後の先行争いを詳しめに描写。
+        - 隊列が落ち着いたら、それぞれ何馬身離れているか、可能な範囲で説明（例：「1馬身差で〇〇」「〇〇に並ぶように〇〇」「2馬身離れて〇〇」など）
         - 中盤以降は「先頭は〇〇、2番手〇〇、内〇〇、外〇〇」と馬名のみの形式を多用。
         - 「〜が素晴らしい走り」「〜のドラマが」等の感想は一切不要。
         4. **後半（3角〜直線）の加速**: 
@@ -447,11 +462,10 @@ async def save_race_audio(text, filename):
     
     # 読み間違い修正用の辞書（メンテナンス性を高める）
     replace_dict = {
+        "コーナー": "コオナー",
         "m": "メートル",
         "M": "メートル",
         "先行馬": "せんこうば",
-        "内": "うち",
-        "外": "そと",
         "向正面": "むこうじょうめん",
         "向こう正面": "むこうじょうめん",
         "前目": "まえめ",
@@ -460,6 +474,12 @@ async def save_race_audio(text, filename):
         "末脚": "すえあし",
         "好スタート": "こうスタート", 
         "脚色": "あしいろ", 
+        "内": "うち",
+        "外": "そと",
+        "18番": "18ばん",
+        "S": "ステークス",
+        "C": "カップ",
+        "T": "トロフィー"
     }
 
     # 一括置換の実行
@@ -543,13 +563,9 @@ if __name__ == "__main__":
     # レース実況テキスト生成（クレンジング前）
     broadcast_script_draft = generate_race_broadcast(final_story, final_report, g, client, MODEL)
 
-    # 最終レース実況テキスト生成
+    # 最終レース実況テキスト・音声の生成・保存
     mp3_name = f"{save_dir_path}Broadcast.mp3"
+    broadcast_name = f'{save_dir_path}Broadcast.txt'
     broadcast_script = asyncio.run(save_race_audio(broadcast_script_draft, mp3_name))
-    save_broadcast_name = f'{save_dir_path}Final_Broadcast.txt'
-    save_text_to_file(broadcast_script, save_broadcast_name)
-
-    # レース実況音声ファイル保存
-    mp3_name = f"{save_dir_path}Broadcast.mp3"
-    asyncio.run(save_race_audio(broadcast_script, mp3_name))
+    save_text_to_file(broadcast_script, broadcast_name)
 

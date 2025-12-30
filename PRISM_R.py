@@ -347,7 +347,7 @@ def PRISM_R_Visualization(df):
     
     plt.title(f"PRISM_R 分析  ( {g.race_date} {g.stadium} {g.td} {g.distance}m  {g.race_name} )", fontsize=16)
     plt.xlabel("EPI ( 先行指数： 左 <= 後 、右 => 前 )", fontsize=12)
-    plt.ylabel("馬本来の基礎能力 (PRISM_R 偏差値)", fontsize=12)
+    plt.ylabel("馬本来の基礎能力 (偏差値)", fontsize=12)
     
     # --- 平均線の描画とテキスト追加 ---
     r_mean = df['PRISM_R_Score'].mean()
