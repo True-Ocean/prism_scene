@@ -22,4 +22,4 @@ Media_files/
 .DS_Store
 
 # Streamlitの秘密設定ファイル
-PRISM_SCENE_Website/.streamlit/secrets.toml
+.streamlit/secrets.toml
