@@ -93,7 +93,7 @@ class RaceInfoApp:
         self.var_td = StringVar()
         self.var_distance = StringVar()
         self.var_cond = StringVar()
-        self.var_exe_opt = IntVar(value=4)
+        self.var_exe_opt = IntVar(value=5)
         self.scene_vars = {}
 
     def create_widgets(self):
@@ -144,17 +144,12 @@ class RaceInfoApp:
             opts = [ ('1. データ取得のみ実行', 1), 
                     ('2. PRISM分析のみ実行（既にデータ取得済であること！）', 2), 
                     ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), 
-                    ('4. 全モジュール一括実行（データ取得・PRISM分析・SCENE分析）', 4)]
+                    ('4. PRISM_SCENE分析のみ実行（既にSCENE分析まで完了していること！）', 4), 
+                    ('5. 全モジュール一括実行', 5)]
             for i, (txt, val) in enumerate(opts):
                 ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
 
-            # --- Section 4: シーン選択---
-            # 2列表示のチェックボックスの場合
-            # f4 = ttk.Labelframe(container, text=' シーン選択 ', padding=10)
-            # f4.grid(row=3, column=0, sticky='ew', pady=5)
-            # f4.columnconfigure(0, weight=1)
-            # f4.columnconfigure(1, weight=1)
-
+            # --- Section 4: シーン選択 ---
             # 3列表示のチェックボックスの場合
             f4 = ttk.Labelframe(container, text=' シーン選択 ', padding=10)
             f4.grid(row=3, column=0, sticky='ew', pady=5)
