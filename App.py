@@ -31,12 +31,12 @@ def show_new_auth():
         password = st.text_input("パスワードを入力してください（会員限定）", type="password")
         
         if st.button("認証する"):
-            if password == "1234": # パスワードを指定 =============================================
+            # 🔐 Secrets からパスワードを読み込んで比較
+            if password == st.secrets["APP_PASSWORD"]: 
                 st.session_state.authenticated = True
-                st.rerun() # 🚀 ここで画面を書き換える
+                st.rerun()
             else:
                 st.error("パスワードが違います。")
-    pass
 
 def load_archive_content(file_name):
     try:
