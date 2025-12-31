@@ -152,7 +152,7 @@ print(Style.RESET_ALL)
 # PRISM分析の実行
 #====================================================
 
-if g.exe_opt in [2, 4]:
+if g.exe_opt in [2, 5]:
 
     #====================================================
     # PRISM分析の実行
@@ -299,7 +299,7 @@ if g.exe_opt in [2, 4]:
 # SCENE分析の実行
 #====================================================
 
-if g.exe_opt in [3, 4]:
+if g.exe_opt in [3, 5]:
 
     print(Fore.GREEN)
     print('====================================================')
@@ -414,6 +414,28 @@ if g.exe_opt in [3, 4]:
     final_df_with_marks.to_sql('FinalMark', con=engine, if_exists = 'replace', index=False)
     final_df_with_marks.to_csv(f'{save_dir_path}Final_Mark.csv', index=False, encoding="utf-8")
 
+
+    #====================================================
+    # PRISM_SCENE分析の実行
+    #====================================================
+
+if g.exe_opt in [4, 5]:
+
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  PRISM_SCENE分析')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('PRISM_SCENE分析を実行しています。')
+    print('')
+
+    SCENE_Cast_df = pd.read_sql(sql='SELECT * FROM "SCENE_Cast";', con=engine)
+    SCENE_Ensemble_df = pd.read_sql(sql='SELECT * FROM "SCENE_Ensemble";', con=engine)
+    final_report = pd.read_sql(sql='SELECT * FROM "FinalReport";', con=engine)
+
+    # 生成データの保存先フォルダ
+    save_dir_path = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
+
     # ファイナル・ドラマ生成
     final_story = SCENE.generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
     save_drama_name = f'{save_dir_path}Final_drama.txt'
@@ -447,7 +469,7 @@ if g.exe_opt in [3]:
     print('SCENE分析が完了しました!')
     print(Style.RESET_ALL)
 
-if g.exe_opt in [4]:
+if g.exe_opt in [4, 5]:
     print(Fore.RED)
     print('PRISM_SCENE分析が完了しました!')
     print(Style.RESET_ALL)
