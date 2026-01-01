@@ -1,5 +1,12 @@
 import streamlit as st
 
+# ページ設定（他のメディアにURLを貼り付けたりする場合に表示されるタイトルを設定）
+st.set_page_config(
+    page_title="PRISM_SCENE",
+    page_icon="🐎",
+    layout="wide"
+)
+
 # --- 各ページの中身（関数） ---
 def show_home():
     st.title('🏠 ようこそ！')
