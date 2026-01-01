@@ -1,10 +1,21 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
-# ページ設定（他のメディアにURLを貼り付けたりする場合に表示されるタイトルを設定）
-st.set_page_config(
-    page_title="PRISM_SCENE",
-    page_icon="🐎",
-    layout="wide"
+# 基本設定
+st.set_page_config(page_title="PRISM_SCENE")
+
+# SNS共有用のメタタグ埋め込み
+components.html(
+    """
+    <head>
+        <title>PRISM_SCENE</title>
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://prism-scene.streamlit.app">
+        <meta property="og:title" content="PRISM_SCENE">
+        <meta property="og:description" content="プリズム・シーンへようこそ！定量分析レポートからとある世界線の物語まで、競馬コンテンツが満載のプラットフォームです。">
+    </head>
+    """,
+    height=0, # 画面には表示させない
 )
 
 # --- 各ページの中身（関数） ---
