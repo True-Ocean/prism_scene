@@ -221,13 +221,16 @@ def run_final_aggregation(all_ranks, cast_df):
     return final_df
 
 
+import pandas as pd
+
 #====================================================
 # 最終結果から馬印を付与する関数
 #====================================================
 
 def assign_race_marks_advanced(final_df, ensemble_df):
     """
-    シミュレーション結果とライバル関係に基づき、戦略的に印を付与する
+    シミュレーション結果とライバル関係に基づき、戦略的に印を付与し、
+    指定された順序で並べ替えて出力する
     """
     df = final_df.copy()
     # ％表記を計算用に数値に戻す
@@ -256,17 +259,15 @@ def assign_race_marks_advanced(final_df, ensemble_df):
             df.at[tan_ana_idx, '印'] = "▲ 単穴"
         else:
             # 全員勝率0.0%の場合、最下位の着順が最も大きい（派手に負けている）馬を選択
-            # （※もし「最下位が最もマシな馬」なら .min() に変更してください）
             max_lowest_val = remaining['最下位'].max()
-            # 最大値を持つ馬のインデックスを確実に取得
             potential_indices = remaining[remaining['最下位'] == max_lowest_val].index
             if not potential_indices.empty:
                 df.at[potential_indices[0], '印'] = "▲ 単穴"
 
     # 5. △　ドラマ: ライバル関係が存在する馬を優先
-    # ensemble_dfの「ライバル関係」に含まれる馬名を抽出
     remaining = df[mask_eligible & (df['印'] == "")]
-    rival_names = " ".join(ensemble_df['ライバル関係'].tolist())
+    # ensemble_dfの「ライバル関係」に含まれる馬名を抽出（エラー回避のため文字列化して結合）
+    rival_names = " ".join(ensemble_df['ライバル関係'].fillna("").astype(str).tolist())
     
     roman_idx = None
     for idx in remaining.index:
@@ -289,11 +290,30 @@ def assign_race_marks_advanced(final_df, ensemble_df):
     # 6. ☆ ドリーム: 条件を満たす中で、最も平均着順が低い（＝一番下にいる）馬
     remaining = df[mask_eligible & (df['印'] == "")]
     if not remaining.empty:
-        # remainingは既に平均着順でソートされているので、最後の一頭
+        # remainingは既に平均着順でソートされていると仮定して、最後の一頭
         dream_idx = remaining.index[-1]
         df.at[dream_idx, '印'] = "☆ ドリーム"
 
-    return df.drop(columns=['win_rate'])
+    # ----------------------------------------------------
+    # 追加: 指定順序での並べ替え処理
+    # ----------------------------------------------------
+    # 並べ替えたい順序のリスト
+    sort_order = ["◎ 本命", "○ 対抗", "▲ 単穴", "△ ドラマ", "★ ロマン", "☆ ドリーム"]
+    
+    # 順序リストを基にマッピング辞書を作成 (例: {'◎ 本命': 0, '○ 対抗': 1, ...})
+    sort_map = {label: i for i, label in enumerate(sort_order)}
+
+    # 'sort_key'列を作成し、数値を割り当てる
+    # リストにない値（印がない馬など）は NaN になる
+    df['sort_key'] = df['印'].map(sort_map)
+
+    # ソート実行
+    # na_position='last' で印がない馬を下に、同じ印内や印なし同士は元の順序(平均着順等)を維持したい場合
+    # ここでは単純に sort_key で並べ替えます
+    df = df.sort_values(by=['sort_key'], na_position='last')
+
+    # 作業用カラムと計算用win_rateを削除して返す
+    return df.drop(columns=['win_rate', 'sort_key'])
 
 
 #====================================================
