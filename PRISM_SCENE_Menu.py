@@ -332,7 +332,7 @@ class RaceInfoApp:
         self.app.deiconify()
         
         # マウスを「情報を更新」ボタンに配置
-        pgui.moveTo(650, 700)
+        pgui.moveTo(650, 790)
 
         # メインループ開始
         self.app.mainloop()
