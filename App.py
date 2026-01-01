@@ -38,6 +38,15 @@ def show_new_auth():
             else:
                 st.error("パスワードが違います。")
 
+def show_race_content(file_name):
+    try:
+        path = f"pages/{file_name}"
+        with open(path, encoding="utf-8") as f:
+            code = compile(f.read(), path, 'exec')
+            exec(code, globals())
+    except FileNotFoundError:
+        st.error(f"ファイル {file_name} が見つかりませんでした。")
+
 def load_archive_content(file_name):
     try:
         path = f"pages/{file_name}"
@@ -47,9 +56,29 @@ def load_archive_content(file_name):
     except FileNotFoundError:
         st.error(f"ファイル {file_name} が見つかりませんでした。")
 
+# --- 今週のレースを選択・表示する関数 ---
+def show_races():
+    st.title("📚 今週のレース")
+    
+    # ドロップダウンの選択肢を作成（表示名：ファイル名）
+    race_options = {
+        "選択してください": None,
+        "2026/1/4 中山金杯（G3）": "20260104_中山金杯.py",
+        "2025/1/4 京都金杯（G3）": "20260104_京都金杯.py"
+    }
+
+    selected_label = st.selectbox("今週のレースレポートを選択", options=list(race_options.keys()))
+
+    file_name = race_options[selected_label]
+    if file_name:
+        st.divider()
+        load_archive_content(file_name)
+    else:
+        st.info("見たいレースを上のメニューから選んでください。")
+
 # --- アーカイブを選択・表示する関数 ---
 def show_archives():
-    st.title("📚 フリーアーカイブ")
+    st.title("📚 過去のG1レース")
     
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
     archive_options = {
@@ -70,12 +99,14 @@ def show_archives():
 # --- 1. ページの定義 ---
 home_page = st.Page(show_home, title="ホーム", icon="🏠")
 new_page = st.Page(show_new_auth, title="2025/12/28 有馬記念", icon="🔥")
-archive_page = st.Page(show_archives, title="フリーアーカイブ", icon="📂") # 1つに統合
+race_page = st.Page(show_races, title="今週の注目レース", icon="🏇")
+archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂") # 1つに統合
 
 # --- 2. ナビゲーションの定義 ---
 pg = st.navigation({
     "PRISM_SCENE": [home_page],
     "会員限定コンテンツ": [new_page],
+    "フリーコンテンツ": [race_page],
     "アーカイブ": [archive_page] # サイドバーには1項目だけ表示される
 })
 
