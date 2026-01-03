@@ -137,6 +137,9 @@ HorseRecords_df = Data_Preparation.Horse_Records_Preparation(RaceTable_df)
 # 調教データの取得
 Hanro_df, CW_df = Data_Preparation.Training_Data_Preparation()
 
+# 出走馬の頭数をグローバル変数に格納
+g.hr_num = len(RaceTable_df)
+
 # PRISM分析に必要となる3つの基本DFをPostgreSQLに保存
 RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace', index=False)
 HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace', index=False)
