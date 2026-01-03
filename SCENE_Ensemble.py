@@ -699,10 +699,14 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     # 5. 「人気度優先」でソートするための準備
     Final_List_df['Abs_Order_Diff'] = Final_List_df['Wtd_Order_Diff'].abs()
 
-    # 6. 人気度優先ソート基準を適用
+# 6. 【修正】ソート基準の優先順位を変更
+    # 1. Total_Matches (降順: 対戦が多いほど上位)
+    # 2. Average_Popularity_Score (昇順: 人気があるほど上位)
+    # 3. Abs_Order_Diff (昇順: 僅差であるほど上位)
+    # 4. Rivalry_Score (降順: 指標スコアが高いほど上位)
     Final_List_df_Sorted_Popular = Final_List_df.sort_values(
-        by=['Average_Popularity_Score', 'Abs_Order_Diff', 'Rivalry_Score'],
-        ascending=[True, True, False]
+        by=['Total_Matches', 'Average_Popularity_Score', 'Abs_Order_Diff', 'Rivalry_Score'],
+        ascending=[False, True, True, False]
     ).reset_index(drop=True)
 
     # 7. トップ10を抽出
