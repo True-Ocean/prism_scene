@@ -211,12 +211,15 @@ def Data_Getter():
         smart_click('小ダイアログ|上書きボタン')
         print('')
 
+        # 出走頭数の取得
+        df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
+        g.hr_num = len(df_race_table)
+
         # デバグ用（マウス自動操作を止める）
         focus_vscode()
         input('>>')
         time.sleep(wait_time)
         focus_target()
-
 
         # 各馬実績データ取得
         print('実績データ取得...')
@@ -292,9 +295,7 @@ def Data_Getter():
         # 出馬表データ（ファイル名：Race_Table.csv）をアーカイブフォルダにコピー
         shutil.copy(f'{work_dir}RaceInfo.csv', race_dir)
         shutil.copy(f'{work_dir}RaceTable.csv', race_dir)
-        # 出走頭数の取得
-        df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
-        g.hr_num = len(df_race_table)
+
         # 各馬実績データと血統データを作業フォルダーにコピー
         for i in range(g.hr_num):
             shutil.copy(f'{work_dir}Uma{i+1}.csv', race_dir)
