@@ -341,7 +341,7 @@ def assign_race_marks_advanced(final_df, ensemble_df):
 
 # 最終結果の世界線をファイナル・ドラマとして再現する（Gemini API利用）
 def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
-    race_info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name} ({g.cond})'
+    race_info = f'{g.stadium}競馬場 {g.clas} {g.td} {g.distance}m {g.race_name} ({g.cond})'
     scene_instruction = "、".join(g.selected_scenes)
     
     # 1. 統計データ
