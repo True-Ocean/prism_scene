@@ -85,7 +85,7 @@ sub_dir_name = "archive/20260104_中山金杯" # ===============================
 
 
 # キャッシュ関数を呼び出し（2回目以降はここが一瞬で終わります）
-images = load_all_images_from_gcs(dir_name, target_files)
+images = load_all_images_from_gcs(f'{dir_name}/{sub_dir_name}', target_files)
 
 # --- 1. ページ全体の基本設定 ---
 st.set_page_config(page_title="PRISM_SCENE Report", layout="wide")
@@ -126,7 +126,7 @@ def display_gcs_image(image_key, caption_text):
     if images.get(image_key):
         st.image(images[image_key], caption=caption_text, width="content")
     else:
-        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: new/{image_key}）")
+        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: {sub_dir_name}/{image_key}）")
 
 # --- メインコンテンツの分岐 ---
 if sub_menu == "基礎能力と先行指数":
