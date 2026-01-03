@@ -219,21 +219,23 @@ def analyze_single_pair(row, analysis_input, client, model):
             contents=user_prompt,
             config={
                 "system_instruction": system_instruction,
-                "response_mime_type": "application/json"
+                "response_mime_type": "application/json",
+                "temperature": 0.5  # 少し柔軟性を持たせて成功率を上げる
             }
         )
         
-        # JSON出力を期待
         narrative_json = response.text
-        status = "成功"
-        
-        # 応答がJSONでない場合の簡易的なチェック
-        if not narrative_json.strip().startswith('{'):
-             status = f"JSON形式エラー: {narrative_json[:50]}..."
+        # 応答が空でないか、JSONの開始文字があるか確認
+        if narrative_json and narrative_json.strip().startswith('{'):
+            status = "成功"
+        else:
+            status = "JSON形式エラー"
+            narrative_json = "{}" # パースエラーを防ぐための空JSON
 
     except Exception as e:
-        narrative_json = f"API呼び出しエラー: {e}"
+        print(f"  [Error] {horse_a} vs {horse_b}: {e}")
         status = "失敗"
+        narrative_json = "{}"
 
     return {
         '馬名_A': horse_a,
@@ -278,9 +280,14 @@ def run_parallel_analysis(df, analysis_input, client, model, max_workers=5):
                     'Narrative_JSON': ''
                 })
 
+    Analysis_Result_df = pd.DataFrame(analysis_results)
+
+    # 2. 成功したものだけをフィルタリング
+    Success_df = Analysis_Result_df[Analysis_Result_df['Analysis_Status'] == '成功'].copy()
+    
     print(f"SCENE_Ensemble分析の並列処理を完了しました。")
 
-    return pd.DataFrame(analysis_results)
+    return Success_df
 
 
 #====================================================
@@ -523,22 +530,44 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     )
 
     # 4. フィルタリングとランキング
-    # 総対戦回数が少ないペアは除外する（例：最低3回以上の対戦）
-    MIN_MATCHES = 3 
-    Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES].copy()
-    if len(Filtered_Pair_df) <= 3:
-        Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 1].copy()
+    MAX_ORDER_DIFF = 4.0  # 実力差の許容範囲
+    MIN_MATCHES = 3       # 理想の対戦回数
 
+    # 理想条件：3回以上対戦かつ、着順差が4.0以内
+    Filtered_Pair_df = Final_Pair_df[
+        (Final_Pair_df['Total_Matches'] >= MIN_MATCHES) & 
+        (Final_Pair_df['Wtd_Order_Diff'].abs() <= MAX_ORDER_DIFF)
+    ].copy()
+
+    # 候補が少ない場合の緩和プロセス
+    # 2回以上の対戦へ緩和（着順差条件は維持）
+    if len(Filtered_Pair_df) <= 3:
+        Filtered_Pair_df = Final_Pair_df[
+            (Final_Pair_df['Total_Matches'] >= MIN_MATCHES -1 ) & 
+            (Final_Pair_df['Wtd_Order_Diff'].abs() <= MAX_ORDER_DIFF)
+        ].copy()
+
+    # 1回以上の対戦へ緩和（着順差条件は維持）
     if len(Filtered_Pair_df) <= 5:
-        Filtered_Pair_df = Final_Pair_df[Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 2].copy()
+        Filtered_Pair_df = Final_Pair_df[
+            (Final_Pair_df['Total_Matches'] >= MIN_MATCHES - 2) & 
+            (Final_Pair_df['Wtd_Order_Diff'].abs() <= MAX_ORDER_DIFF)
+        ].copy()
+
+    # 抽出件数が多すぎる場合、Rivalry_Score 上位 20〜30件程度に絞る
+    # これにより、分析コストを抑えつつ質の高いペアのみを Gemini に渡せます
+    MAX_CANDIDATES = 20
+    if len(Filtered_Pair_df) > MAX_CANDIDATES:
+        Filtered_Pair_df = Filtered_Pair_df.sort_values(by='Rivalry_Score', ascending=False).head(MAX_CANDIDATES)
+
+    Filtered_Pair_df = Filtered_Pair_df.sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
 
     if len(Filtered_Pair_df) == 0:
         print('本レースにおいて、ライバル関係は確認されませんでした。')
         g.rival = 0
         os._exit(0)
-
-    Filtered_Pair_df = Filtered_Pair_df.sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
-
+    
+    
     #====================================================
     # SCENE_Ensemble分析（ナラティブ抽出）
     #====================================================
@@ -624,8 +653,8 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     # メインのAPI実行
     #====================================================
 
-    # 並列実行 (例: 5並列)
-    MAX_WORKERS = 5
+    # 並列実行 (例: 4並列に緩和)
+    MAX_WORKERS = 4
     Analysis_Result_DF_Parallel = run_parallel_analysis(
         Filtered_Pair_df,
         analysis_input,
@@ -648,35 +677,36 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     # 最終ライバル候補トップリストの提示
     #====================================================
 
-    # 最終リスト作成コードの再実行（構造の強化）
-    # JSONデータをDFに展開
-    # 戻り値は辞書のシリーズ
+    # 1. JSONデータをパースして辞書のシリーズを作成（ここで定義します）
+    # Final_Rival_Analysis_df にある 'Narrative_JSON' カラムをパース
     Narrative_Series = Final_Rival_Analysis_df['Narrative_JSON'].apply(parse_narrative_json)
 
-    # 辞書のシリーズを明示的にDataFrameに変換
+    # 2. 辞書のシリーズをDFに展開
     Narrative_Expanded_df = pd.DataFrame(Narrative_Series.tolist(), index=Final_Rival_Analysis_df.index)
 
-    # 最終的な統合DFを作成
+    # 3. 定量データと定性データを統合
     Final_List_df = pd.concat([
-        # ★★★ 修正箇所: Average_Popularity_Score を追加 ★★★
         Final_Rival_Analysis_df[['馬名_A', '馬名_B', 'Rivalry_Score', 'Total_Matches', 'Wtd_Order_Diff', 'Average_Popularity_Score']],
         Narrative_Expanded_df
-    ], axis=1).sort_values(by='Rivalry_Score', ascending=False).reset_index(drop=True)
+    ], axis=1)
 
-    # 「人気度優先」でDFを並べ替えてトップ10を抽出
-    # abs(Wtd_Order_Diff) をソート用に計算
+    # 4. 【強化】いずれかの定性分析項目に「データ欠損」が含まれる行を除外
+    check_cols = ['conclusion_type', 'narrative_summary', 'turning_point_race', 'current_dominance', 'dominance_reason']
+    
+    # いずれかに "データ欠損" がある行を除外
+    Final_List_df = Final_List_df[~Final_List_df[check_cols].eq('データ欠損').any(axis=1)].copy()
+
+    # 5. 「人気度優先」でソートするための準備
     Final_List_df['Abs_Order_Diff'] = Final_List_df['Wtd_Order_Diff'].abs()
 
-    # 人気度優先ソート基準を適用:
-    # 1. Average_Popularity_Score (昇順, 数値が小さい＝人気が高い)
-    # 2. Abs_Order_Diff (昇順, 互角なほど上位)
-    # 3. Rivalry_Score (降順, ドラマ性が高いほど上位)
+    # 6. 人気度優先ソート基準を適用
     Final_List_df_Sorted_Popular = Final_List_df.sort_values(
         by=['Average_Popularity_Score', 'Abs_Order_Diff', 'Rivalry_Score'],
-        ascending=[True, True, False] # True=昇順 (人気/互角), False=降順 (ドラマ性)
+        ascending=[True, True, False]
     ).reset_index(drop=True)
 
-    TOP_N_RIVALS = 10 # 件数は10を維持
+    # 7. トップ10を抽出
+    TOP_N_RIVALS = 10 
     Top_Rival_List_df = Final_List_df_Sorted_Popular.head(TOP_N_RIVALS).copy()
 
     narrative_list = []
@@ -701,4 +731,5 @@ def SCENE_Ensemble_Analysis(horse_records_df):
 
 if __name__ == "__main__":
 
-    SCENE_Ensemble_Analysis()
+    HorseRecords_df = pd.read_sql(sql = f'SELECT * FROM "HorseRecords";', con=engine)
+    SCENE_Ensemble_Analysis(HorseRecords_df)
