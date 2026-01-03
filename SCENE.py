@@ -222,98 +222,117 @@ def run_final_aggregation(all_ranks, cast_df):
 
 
 import pandas as pd
-
 #====================================================
-# 最終結果から馬印を付与する関数
+# 最終結果から馬印を付与する関数（修正完了版）
 #====================================================
 
 def assign_race_marks_advanced(final_df, ensemble_df):
-    """
-    シミュレーション結果とライバル関係に基づき、戦略的に印を付与し、
-    指定された順序で並べ替えて出力する
-    """
-    df = final_df.copy()
-    # ％表記を計算用に数値に戻す
-    df['win_rate'] = df['勝率'].str.rstrip('%').astype('float')
+    # 1. 【重要】インデックスを0からの連番にリセット
+    # これにより、.at や .loc での指定ズレを物理的に防ぎます
+    df = final_df.copy().reset_index(drop=True)
     
+    # 2. データ型の変換（安全策）
+    # 文字列のまま比較してしまうリスクを排除するため、確実に数値化します
+    df['win_rate'] = df['勝率'].str.replace('%', '', regex=False).replace('-', '0').replace('', '0').astype(float)
+    df['fukusho_rate'] = df['複勝率'].str.replace('%', '', regex=False).replace('-', '0').replace('', '0').astype(float)
+    
+    # 最高位も念のため数値化（エラー値は99へ）
+    import pandas as pd
+    df['highest_rank'] = pd.to_numeric(df['最高位'], errors='coerce').fillna(99).astype(int)
+
     # 必須条件：最高位が3着以内
-    mask_eligible = df['最高位'] <= 3
+    mask_eligible = df['highest_rank'] <= 3
     df['印'] = ""
 
-    # 1. ◎ 本命 & 2. ○ 対抗 (平均着順上位)
+    # ------------------------------------------------
+    # 1. ◎ 本命 & 2. ○ 対抗
+    # ------------------------------------------------
     eligible_indices = df[mask_eligible].index
     if len(eligible_indices) >= 1:
         df.at[eligible_indices[0], '印'] = "◎ 本命"
     if len(eligible_indices) >= 2:
         df.at[eligible_indices[1], '印'] = "○ 対抗"
 
-    # 3. ▲ 単穴: 1着率が最も高い（印なしの馬から）
+    # ------------------------------------------------
+    # 3. ▲ 単穴: 勝率重視
+    # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
     if not remaining.empty:
-        # 勝率の最大値を確認
         max_win_rate = remaining['win_rate'].max()
-        
         if max_win_rate > 0:
-            # 勝率が0より大きい馬がいれば、その最大値の馬（複数いれば最初の馬）
+            # 勝率最大の馬
             tan_ana_idx = remaining[remaining['win_rate'] == max_win_rate].index[0]
             df.at[tan_ana_idx, '印'] = "▲ 単穴"
         else:
-            # 全員勝率0.0%の場合、最下位の着順が最も大きい（派手に負けている）馬を選択
-            max_lowest_val = remaining['最下位'].max()
-            potential_indices = remaining[remaining['最下位'] == max_lowest_val].index
-            if not potential_indices.empty:
-                df.at[potential_indices[0], '印'] = "▲ 単穴"
+            # 勝率0なら複勝率
+            # idxmax()でインデックスを直接取得
+            tan_ana_idx = remaining['fukusho_rate'].idxmax()
+            df.at[tan_ana_idx, '印'] = "▲ 単穴"
 
-    # 5. △　ドラマ: ライバル関係が存在する馬を優先
+    # ------------------------------------------------
+    # 4. △ ドラマ: ライバル関係
+    # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
-    # ensemble_dfの「ライバル関係」に含まれる馬名を抽出（エラー回避のため文字列化して結合）
-    rival_names = " ".join(ensemble_df['ライバル関係'].fillna("").astype(str).tolist())
-    
-    roman_idx = None
-    for idx in remaining.index:
-        if df.loc[idx, '馬名'] in rival_names:
-            roman_idx = idx
-            break
-    
-    if roman_idx is not None:
-        df.at[roman_idx, '印'] = "△ ドラマ"
-    elif not remaining.empty:
-        # ライバルが見つからない場合は残りの最上位
-        df.at[remaining.index[0], '印'] = "△ ドラマ"
+    if not remaining.empty: # 空チェック追加
+        rival_set = set()
+        if 'ライバル関係' in ensemble_df.columns:
+            for val in ensemble_df['ライバル関係'].dropna():
+                rival_set.update(str(val).replace('、', ' ').split())
+        
+        drama_idx = None
+        for idx in remaining.index:
+            if df.at[idx, '馬名'] in rival_set:
+                drama_idx = idx
+                break
+        
+        if drama_idx is not None:
+            df.at[drama_idx, '印'] = "△ ドラマ"
+        else:
+            # ライバル不在なら残りの最上位
+            df.at[remaining.index[0], '印'] = "△ ドラマ"
 
-    # 4. ★ロマン: 最高位が1着（一撃の可能性）
+    # ------------------------------------------------
+    # 5. ★ ロマン: 一撃の可能性（ここを修正）
+    # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
-    drama_candidates = remaining[remaining['最高位'] == 1]
-    if not drama_candidates.empty:
-        df.at[drama_candidates.index[0], '印'] = "★ ロマン"
+    
+    if not remaining.empty:
+        # 最高位が1着の馬を探す
+        top_candidates = remaining[remaining['highest_rank'] == 1]
+        
+        target_idx = None
+        
+        if not top_candidates.empty:
+            # 最高位1着がいればその先頭
+            target_idx = top_candidates.index[0]
+        else:
+            # いなければ複勝率トップ
+            target_idx = remaining['fukusho_rate'].idxmax()
+            
+        # 【重要】他と同じく .at を使用して書き込む
+        if target_idx is not None:
+            df.at[target_idx, '印'] = "★ ロマン"
 
-    # 6. ☆ ドリーム: 条件を満たす中で、最も平均着順が低い（＝一番下にいる）馬
+    # ------------------------------------------------
+    # 6. ☆ ドリーム: 大穴候補
+    # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
     if not remaining.empty:
-        # remainingは既に平均着順でソートされていると仮定して、最後の一頭
-        dream_idx = remaining.index[-1]
-        df.at[dream_idx, '印'] = "☆ ドリーム"
+        # 最後尾（平均着順が最も低い）
+        df.at[remaining.index[-1], '印'] = "☆ ドリーム"
+
 
     # ----------------------------------------------------
-    # 追加: 指定順序での並べ替え処理
+    # 並べ替えと出力
     # ----------------------------------------------------
-    # 並べ替えたい順序のリスト
     sort_order = ["◎ 本命", "○ 対抗", "▲ 単穴", "△ ドラマ", "★ ロマン", "☆ ドリーム"]
-    
-    # 順序リストを基にマッピング辞書を作成 (例: {'◎ 本命': 0, '○ 対抗': 1, ...})
     sort_map = {label: i for i, label in enumerate(sort_order)}
-
-    # 'sort_key'列を作成し、数値を割り当てる
-    # リストにない値（印がない馬など）は NaN になる
     df['sort_key'] = df['印'].map(sort_map)
 
-    # ソート実行
-    # na_position='last' で印がない馬を下に、同じ印内や印なし同士は元の順序(平均着順等)を維持したい場合
-    # ここでは単純に sort_key で並べ替えます
     df = df.sort_values(by=['sort_key'], na_position='last')
 
-    # 作業用カラムと計算用win_rateを削除して返す
-    return df.drop(columns=['win_rate', 'sort_key'])
+    # 計算用の一時カラムを削除して返す
+    return df.drop(columns=['win_rate', 'fukusho_rate', 'highest_rank', 'sort_key'])
 
 
 #====================================================
@@ -321,7 +340,7 @@ def assign_race_marks_advanced(final_df, ensemble_df):
 #====================================================
 
 # 最終結果の世界線をファイナル・ドラマとして再現する（Gemini API利用）
-def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
+def generate_final_roman(cast_df, ensemble_df, final_report, g, client, model):
     race_info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name} ({g.cond})'
     scene_instruction = "、".join(g.selected_scenes)
     
@@ -611,9 +630,9 @@ if __name__ == "__main__":
     final_df_with_marks.to_sql('FinalMark', con=engine, if_exists = 'replace', index=False)
 
     # ファイナル・ドラマ生成
-    final_story = generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
-    save_drama_name = f'{save_dir_path}Final_Drama.txt'
-    save_text_to_file(final_story, save_drama_name)
+    final_story = generate_final_roman(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
+    save_roman_name = f'{save_dir_path}Final_roman.txt'
+    save_text_to_file(final_story, save_roman_name)
 
     # レース実況テキスト生成（クレンジング前）
     broadcast_script_draft = generate_race_broadcast(final_story, final_report, g, client, MODEL)
