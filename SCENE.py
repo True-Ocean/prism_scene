@@ -340,7 +340,7 @@ def assign_race_marks_advanced(final_df, ensemble_df):
 #====================================================
 
 # 最終結果の世界線をファイナル・ドラマとして再現する（Gemini API利用）
-def generate_final_roman(cast_df, ensemble_df, final_report, g, client, model):
+def generate_final_drama(cast_df, ensemble_df, final_report, g, client, model):
     race_info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name} ({g.cond})'
     scene_instruction = "、".join(g.selected_scenes)
     
@@ -382,15 +382,16 @@ def generate_final_roman(cast_df, ensemble_df, final_report, g, client, model):
         ・名乗りの完全禁止： 独白やセリフを「僕は〇〇」「私こそが～」といった挨拶や自己紹介から始めることを【厳禁】とします。名前は地の文（情景描写）で示し、独白はいきなり感情や感覚から書き始めてください。
         ・三点リーダー（……）の排除： 独白の冒頭を「……」から始めないでください。余韻に逃げず、ダイレクトに「衝動」や「渇き」を記述してください。
         ・馬の呼び方： 序盤（シーン1）のみ「1番ジャスティンパレス」の形式。以降は数字を完全に排し「馬名のみ」で記述してください。
-        ・情報の昇華： 指数や人気などの数値は、コース取り、手応え、立ち込める殺気などの情景描写に完全に変換してください。
+        ・情報の昇華： 指数や勝率、人気などの数値は、コース取り、手応え、立ち込める殺気などの情景描写に完全に変換してください。
 
         ■ 構造：血統（独白）と因縁（セリフ）
         1. 内なる声（独白の書式）：【キャラデータ】を反映
-        自身のルーツや誇りは、必ず（ ）で囲んで記述してください。
+        自身の心の中の独り言には、必ず（ ）で囲んで記述してください。
         （例）クロワデュノールが内を突く。（熱い。父から継いだこの心臓が、もっと先へ行けと叫んでいる。）
         ※地の文で馬名を挙げた直後に、その馬の精神に潜り込むように独白を繋げてください。
         2. 外なる叫び（セリフの書式）：【ライバル関係】を反映
         宿敵との会話は必ず「 」で囲んで記述してください。
+        （例）マスカレードボールがクロワデュノールに迫る。「そのポジションは僕のものだ！」クロワデュノールも応戦する。「来るなら来い！」
         3. 描写の濃淡（重要）:
         18頭全員の独白を順番に書く「点呼描写」を【厳禁】とします。ライバル関係にある数頭（例：マスカレードボールとクロワデュノール）の心理を深く、長く掘り下げる一方で、他の馬は地の文での位置取り描写のみに留めてください。これにより物語に「主人公」を作ってください。
 
@@ -402,7 +403,7 @@ def generate_final_roman(cast_df, ensemble_df, final_report, g, client, model):
         【構成とシーン別指示】
         {scene_instruction}を踏まえ、概ね以下の4部構成で執筆してください。
         
-        ### モノローグ：（レース前の競馬場の描写、緊張感、ゲートインの状況）
+        ### プロローグ：（レース前の競馬場の描写、緊張感、ゲートインの状況）
         静寂の中に響く蹄の音。観客席のざわめき。馬たちの息遣い。レース前の緊張感を、五感を駆使して描写してください。
 
         ### 序盤：（スタート、先行争い）
@@ -630,9 +631,9 @@ if __name__ == "__main__":
     final_df_with_marks.to_sql('FinalMark', con=engine, if_exists = 'replace', index=False)
 
     # ファイナル・ドラマ生成
-    final_story = generate_final_roman(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
-    save_roman_name = f'{save_dir_path}Final_roman.txt'
-    save_text_to_file(final_story, save_roman_name)
+    final_story = generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
+    save_drama_name = f'{save_dir_path}Final_drama.txt'
+    save_text_to_file(final_story, save_drama_name)
 
     # レース実況テキスト生成（クレンジング前）
     broadcast_script_draft = generate_race_broadcast(final_story, final_report, g, client, MODEL)
