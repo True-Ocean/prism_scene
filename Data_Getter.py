@@ -215,9 +215,9 @@ def Data_Getter():
         df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
         g.hr_num = len(df_race_table)
 
-        # デバグ用（マウス自動操作を止める）
-        focus_vscode()
-        input('>>')
+        # # デバグ用（マウス自動操作を止める）
+        # focus_vscode()
+        # input('>>')
         time.sleep(wait_time)
         focus_target()
 
