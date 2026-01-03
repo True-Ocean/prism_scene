@@ -9,20 +9,28 @@ import os
 @st.cache_data(ttl=3600)  # 1時間はキャッシュを保持
 
 # 画像ファイルを読み込み、キャッシュ
-def load_all_images_from_gcs(bucket_name, file_names_list):
-    """GCSから指定された複数の画像を一度に読み込み、キャッシュする関数"""
+@st.cache_data(ttl=3600)  # Streamlitのキャッシュ機能を追加
+def load_all_images_from_gcs(bucket_name, sub_dir, file_names_list):
+    """
+    GCSから指定されたサブフォルダ内の複数の画像を読み込む
+    bucket_name: "prism_scene_data_storage"
+    sub_dir: "new" または "archive"
+    file_names_list: 読み込みたいファイル名のリスト
+    """
     client = storage.Client.from_service_account_info(st.secrets["gcp_service_account"])
     bucket = client.bucket(bucket_name)
     
     loaded_images = {}
     for name in file_names_list:
-        blob = bucket.blob(f"{sub_dir_name}/{name}")
-        # 404エラーを防ぐため、存在を確認してからダウンロード
+        # サブフォルダ名とファイル名を結合してフルパス（blob名）を作る
+        full_path = f"{sub_dir}/{name}"
+        blob = bucket.blob(full_path)
+        
         if blob.exists():
             loaded_images[name] = blob.download_as_bytes()
         else:
-            # ファイルがない場合はNoneを入れておくか、ダミー画像を検討
             loaded_images[name] = None
+            
     return loaded_images
 
 # テキストファイル（.txt）を読み込みキャッシュ
@@ -85,7 +93,7 @@ sub_dir_name = "archive/20251227_ホープフルS" # ===========================
 
 
 # キャッシュ関数を呼び出し（2回目以降はここが一瞬で終わります）
-images = load_all_images_from_gcs(sub_dir_name, target_files)
+images = load_all_images_from_gcs(dir_name, sub_dir_name, target_files)
 
 # --- 1. ページ全体の基本設定 ---
 st.set_page_config(page_title="PRISM_SCENE Report", layout="wide")
@@ -126,7 +134,7 @@ def display_gcs_image(image_key, caption_text):
     if images.get(image_key):
         st.image(images[image_key], caption=caption_text, width="content")
     else:
-        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: new/{image_key}）")
+        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: {sub_dir_name}/{image_key}）")
 
 # --- メインコンテンツの分岐 ---
 if sub_menu == "基礎能力と先行指数":
