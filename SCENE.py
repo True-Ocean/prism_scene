@@ -458,9 +458,14 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
 #====================================================
 
 # ファイナル・ドラマから、競馬実況風のテキストを生成（Gemeni API利用）
-def generate_race_broadcast(final_story, final_report, g, client, model):
+def generate_race_broadcast(final_story, final_report, client, model):
     horse_info = final_report[['番', '馬名']].to_string(index=False)
-    race_header = f"{g.race_date} {g.stadium} {g.race_name} ({g.td}{g.distance}m / 馬場:{g.cond})"
+    if g.cond == '稍':
+        g.cond = '稍重'
+    elif g.cond == '不':
+        g.cond = '不良'
+
+    race_header = f"{g.race_date} {g.stadium}競馬場 {g.race_name} ({g.td}{g.distance}m / 馬場:{g.cond})"
 
     # generate_race_broadcast の system_instruction を強化
     system_instruction = f"""
@@ -558,6 +563,8 @@ async def save_race_audio(text, filename):
         "急坂": "急ざか",
         "18番": "18ばん",
         "馬群": "ばぐん",
+        "重": "おも",
+        "稍重": "ややおも",
         "S": "ステークス",
         "C": "カップ",
         "T": "トロフィー"
@@ -575,7 +582,7 @@ async def save_race_audio(text, filename):
     clean_text = clean_text.rstrip() + " 。 。 。 。 " 
 
     # --- 3. 分割と生成 ---
-    split_keywords = ["最終コーナー", "最後の直線", "最終直線", "残り200", "向いた", "直線コース"]
+    split_keywords = ["最終コーナー", "第4コーナー", "最後の直線", "最終直線", "残り200", "残り100", "ゴール前"]
     parts = []
     for kw in split_keywords:
         if kw in clean_text:
