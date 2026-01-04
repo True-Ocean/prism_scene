@@ -603,10 +603,10 @@ async def save_race_audio(text, filename):
             parts[1] = kw + parts[1]
             break
             
-    # # 音声の選択（現在は女性ボイス）
-    # voice_name = "ja-JP-NanamiNeural" 
-    # 男性ボイス（Keita）に変更
-    voice_name = "ja-JP-KeitaNeural"
+    # 音声の選択（現在は女性ボイス）
+    voice_name = "ja-JP-NanamiNeural" 
+    # # 男性ボイス（Keita）に変更
+    # voice_name = "ja-JP-KeitaNeural"
 
     if len(parts) == 2:
         print(f"{g.race_name}：レース実況音声ファイル生成中...")
