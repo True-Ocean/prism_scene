@@ -554,9 +554,9 @@ def SCENE_Ensemble_Analysis(horse_records_df):
             (Final_Pair_df['Wtd_Order_Diff'].abs() <= MAX_ORDER_DIFF)
         ].copy()
 
-    # 抽出件数が多すぎる場合、Rivalry_Score 上位 20〜30件程度に絞る
+    # 抽出件数が多すぎる場合、Rivalry_Score 上位 15件程度に絞る
     # これにより、分析コストを抑えつつ質の高いペアのみを Gemini に渡せます
-    MAX_CANDIDATES = 20
+    MAX_CANDIDATES = 15
     if len(Filtered_Pair_df) > MAX_CANDIDATES:
         Filtered_Pair_df = Filtered_Pair_df.sort_values(by='Rivalry_Score', ascending=False).head(MAX_CANDIDATES)
 
@@ -653,8 +653,8 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     # メインのAPI実行
     #====================================================
 
-    # 並列実行 (例: 4並列に緩和)
-    MAX_WORKERS = 4
+    # 並列実行 (例: 3並列に緩和)
+    MAX_WORKERS = 3
     Analysis_Result_DF_Parallel = run_parallel_analysis(
         Filtered_Pair_df,
         analysis_input,
