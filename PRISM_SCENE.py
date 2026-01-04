@@ -446,7 +446,7 @@ if g.exe_opt in [4, 5]:
     SCENE.save_text_to_file(final_story, save_drama_name)
 
     # レース実況テキスト生成（クレンジング前）
-    broadcast_script_draft = SCENE.generate_race_broadcast(final_story, final_report, g, client, MODEL)
+    broadcast_script_draft = SCENE.generate_race_broadcast(final_story, final_report, client, MODEL)
 
     # 最終レース実況テキスト・音声の生成・保存
     mp3_name = f"{save_dir_path}Broadcast.mp3"
