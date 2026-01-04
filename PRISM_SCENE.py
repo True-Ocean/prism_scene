@@ -435,12 +435,13 @@ if g.exe_opt in [4, 5]:
     SCENE_Cast_df = pd.read_sql(sql='SELECT * FROM "SCENE_Cast";', con=engine)
     SCENE_Ensemble_df = pd.read_sql(sql='SELECT * FROM "SCENE_Ensemble";', con=engine)
     final_report = pd.read_sql(sql='SELECT * FROM "FinalReport";', con=engine)
+    final_mark = pd.read_sql(sql='SELECT * FROM "FinalMark";', con=engine)
 
     # 生成データの保存先フォルダ
     save_dir_path = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 
     # ファイナル・ドラマ生成
-    final_story = SCENE.generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, g, client, MODEL)
+    final_story = SCENE.generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, final_mark, client, MODEL)
     save_drama_name = f'{save_dir_path}Final_drama.txt'
     SCENE.save_text_to_file(final_story, save_drama_name)
 
