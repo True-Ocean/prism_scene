@@ -56,7 +56,9 @@ MODEL = "gemini-2.5-flash" # 高速モデルを維持
 
 # 出走馬全頭が1着になる世界線を出走頭数回バックグラウンドでシミュレーションする（Gemini API使用）
 def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, client, model, max_workers=4):
+
     race_info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name} ({g.cond})'
+    g.hr_num = len(race_table_df)
     merged_df = pd.merge(cast_df, race_table_df[['馬名', '毛色']], on='馬名')
     
     def build_compact_context(df):
@@ -96,12 +98,14 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
             {base_cast_context}
             【主役馬に関わる重要な因縁・ライバル関係】
             {rivalry_context}
-            指示：16頭の着順を以下のJSON形式で出力。
+
+            指示：全{g.hr_num}頭の着順を以下のJSON形式で出力。
+
             ```json
             {{
             "target": "{target_horse}",
             "logic": "30文字以内の主要因",
-            "rank": ["1着馬名", "2着馬名", ..., "16着馬名"]
+            "rank": ["1着馬名", "2着馬名", ..., "{g.hr_num}着馬名"]
             }}
             ```
         """
@@ -111,7 +115,11 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
             response = client.models.generate_content(
                 model=model,
                 contents=user_prompt,
-                config={"system_instruction": system_instruction}
+                config={
+                    "system_instruction": system_instruction,
+                    "temperature": 1.0,  # ここで調整。デフォルトは通常1.0前後
+                    "top_p": 0.95,       # 累積確率に基づく制限（あわせて調整が推奨されます）
+                }
             )
             json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
             if json_match:
@@ -404,7 +412,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
 
         
         【構成とシーン別指示】
-        {scene_instruction}を踏まえ、概ね以下の5部構成で執筆してください。
+        レースのシーンは{scene_instruction}のみとし、概ね以下の5部構成で執筆してください。
         【注目キャラ】を念頭に置いた着順となるよう、ストーリを構築してください。
         
         ### 1. プロローグ：（レース前の競馬場の描写、緊張感、ゲートインの状況）
@@ -413,7 +421,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
         ### 2. 序盤：（スタート、先行争い）
         ゲート開放の衝撃から描写。先団・中団・後方という「馬群の動き」の中で自然に全馬を一度登場させてください。一頭ずつ順番に紹介するリスト形式は【厳禁】です。その流れの中で、主要な数頭の「血の昂ぶり」を独白として挿入します。
 
-        ### 3. 中盤：（隊列が落ち着いてから第3コーナーまで）
+        ### 3. 中盤：（第3コーナーまで）
         心理戦の極地。ライバルの息遣い、視線の交錯を描写。【ライバル関係】にある馬同士の、標的を射抜くような鋭い思考や感情をぶつけ合わせてください。
 
         ### 4. クライマックス：（第4コーナー〜最終直線） 
@@ -488,14 +496,15 @@ def generate_race_broadcast(final_story, final_report, client, model):
         - 隊列が落ち着いたら、それぞれ何馬身離れているか、可能な範囲で説明（例：「1馬身差で〇〇」「〇〇に並ぶように〇〇」「2馬身離れて〇〇」など）
         - 中盤以降は「先頭は〇〇、2番手〇〇、内〇〇、外〇〇」と馬名のみの形式を多用。
         - 「〜が素晴らしい走り」「〜のドラマが」等の感想は一切不要。
-        4. **後半（3角〜直線）の加速**: 
+        4. **後半（4角〜最終直線）の加速**: 
         - 1文を5文字〜15文字程度に短縮。
-        - 最終直線は「〇〇上がってきた！」「内から〇〇！」「外は〇〇！」「〇〇か、〇〇か、〇〇、〇〇、並んでゴール！」といった感じで馬名を連呼しつつ叩きつける表現に。
-        5. **入線後**: 1着を確定させ、2着、3着と思われる馬を伝え、レース展開によって「接戦」「際どい」「圧勝」「快勝」等の表現で簡潔に。
+        - 最終直線は「〇〇上がってきた！」「内から〇〇！」「外は〇〇！」「〇〇か、〇〇か、〇〇、〇〇、並んでゴール！」といった形式で、体言止めを多用すること。
+        - 余計な修飾語は一切排除し、手応えの良い馬に絞って短めのテキストとすることでスピード感を出すこと。【禁止】最終直線の間は、絶対に語尾を「ですます」調にしないこと。
+        5. **入線後**: 1着を確定させ、2着、3着と思われる馬を伝え、レース展開によって「接戦」「際どい」「圧勝」「快勝」「余裕」等の表現で簡潔に。
 
         【データ参照】
         出走馬: {horse_info}
-        展開・結果: {final_story} (ここにある位置関係と結果を「位置情報」としてのみ抽出してください)
+        展開・結果: {final_story} (ここにある位置関係と結果のみを忠実に抽出してください。)
         """
 
     print(f"{g.race_name}：レース実況生成中...")
@@ -546,11 +555,14 @@ async def save_race_audio(text, filename):
         "コーナー": "コオナー",
         "m": "メートル",
         "M": "メートル",
+        "弾ける": "はじける",
+        "重賞": "じゅうしょう",
         "先行馬": "せんこうば",
         "最後方": "さいこうほう",
         "向正面": "むこうじょうめん",
         "向こう正面": "むこうじょうめん",
         "前目": "まえめ",
+        "外々": "そとそと",
         "大外": "おおそと",
         "最内": "さいうち",
         "末脚": "すえあし",
@@ -565,6 +577,7 @@ async def save_race_audio(text, filename):
         "馬群": "ばぐん",
         "重": "おも",
         "稍重": "ややおも",
+        "ゴール板": "ゴールばん",
         "S": "ステークス",
         "C": "カップ",
         "T": "トロフィー"
@@ -590,14 +603,16 @@ async def save_race_audio(text, filename):
             parts[1] = kw + parts[1]
             break
             
-    # 音声の選択（現在は女性ボイス）
-    voice_name = "ja-JP-NanamiNeural" 
+    # # 音声の選択（現在は女性ボイス）
+    # voice_name = "ja-JP-NanamiNeural" 
+    # 男性ボイス（Keita）に変更
+    voice_name = "ja-JP-KeitaNeural"
 
     if len(parts) == 2:
         print(f"{g.race_name}：レース実況音声ファイル生成中...")
-        comm1 = edge_tts.Communicate(parts[0], voice_name, rate="+30%", pitch="+2Hz")
+        comm1 = edge_tts.Communicate(parts[0], voice_name, rate="+35%", pitch="+2Hz")
         # クライマックスはより高く、情熱的に
-        comm2 = edge_tts.Communicate(parts[1], voice_name, rate="+40%", pitch="+12Hz", volume="+50%")
+        comm2 = edge_tts.Communicate(parts[1], voice_name, rate="+45%", pitch="+12Hz", volume="+50%")
         
         await comm1.save("temp_1.mp3")
         await comm2.save("temp_2.mp3")
