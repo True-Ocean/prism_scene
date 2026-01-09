@@ -65,11 +65,13 @@ def create_matchup_df(df):
     Matchup_df = Matchup_df[Matchup_df['馬名_A'] < Matchup_df['馬名_B']].reset_index(drop=True)
     
     Matchup_df = Matchup_df[[
-        'Race_Key', '日付_A', 'レース名_A', 'TD_A', '距離_A',
+        'Race_Key', '日付_A', '場所_A', 'R_A', 'レース名_A', 'TD_A', '距離_A',
         '馬名_A', '年齢_A', 'Ave-3F_A', '上り3F_A', '走破タイム_A', '人気_A', '着順_A', 'PCI_A',
         '馬名_B', '年齢_B', 'Ave-3F_B', '上り3F_B', '走破タイム_B', '人気_B', '着順_B', 'PCI_B'
     ]].rename(columns={
         '日付_A': '日付',
+        '場所_A': '場所',
+        'R_A': 'R',
         'レース名_A': 'レース名',
         'TD_A': 'TD',
         '距離_A': '距離',
@@ -346,7 +348,7 @@ def parse_narrative_json(json_str):
 def SCENE_Ensemble_Analysis(horse_records_df):
 
     # 日付とレース名の結合
-    horse_records_df['Race_Key'] = horse_records_df['日付'].dt.strftime('%Y-%m-%d') + "_" + horse_records_df['レース名']
+    horse_records_df['Race_Key'] = horse_records_df['日付'].dt.strftime('%Y-%m-%d') + "_" + horse_records_df['場所'] + "_" + horse_records_df['R'].astype(str) + "_" + horse_records_df['レース名']
 
     # Matchup_dfの作成
     Matchup_df = create_matchup_df(horse_records_df)
