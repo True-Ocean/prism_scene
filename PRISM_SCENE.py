@@ -52,6 +52,7 @@ import SCENE_Script
 import SCENE_Cast
 import SCENE_Ensemble
 import SCENE
+import Race_Audio_Maker
 
 # PostgreSQLの接続設定
 dotenv_path = '/Users/trueocean/Desktop/Python_Code/Project_Key/.env'
@@ -418,9 +419,9 @@ if g.exe_opt in [3, 5]:
     final_df_with_marks.to_csv(f'{save_dir_path}Final_Mark.csv', index=False, encoding="utf-8")
 
 
-    #====================================================
-    # PRISM_SCENE分析の実行
-    #====================================================
+#====================================================
+# PRISM_SCENE分析の実行
+#====================================================
 
 if g.exe_opt in [4, 5]:
 
@@ -477,3 +478,37 @@ if g.exe_opt in [4, 5]:
     print(Fore.RED)
     print('PRISM_SCENE分析が完了しました!')
     print(Style.RESET_ALL)
+
+
+#====================================================
+# レース実況オーディオの再生成の実行
+#====================================================
+
+if g.exe_opt in [6]:
+
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  レース実況オーディオ再生成')
+    print('====================================================')
+    print(Style.RESET_ALL)
+
+    # ファイルパスを指定
+    save_dir_path = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
+    file_path = f'{save_dir_path}Broadcast.txt'
+
+    Audio_Text = Race_Audio_Maker.audio_text_getter(file_path)
+
+    # 最終レース実況テキスト・音声の生成・保存
+    mp3_name = f"{save_dir_path}Broadcast.mp3"
+    broadcast_script = asyncio.run(Race_Audio_Maker.save_race_audio(Audio_Text, mp3_name))
+
+    # アーカイブフォルダの設定
+    race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
+    # 作業用フォルダの設定
+    work_dir = save_dir_path
+
+    # SCENE分析で生成したデータをアーカイブフォルダにコピー
+    shutil.copy(f'{work_dir}Broadcast.txt', race_dir)
+    shutil.copy(f'{work_dir}Broadcast.mp3', race_dir)
+
+    print('')

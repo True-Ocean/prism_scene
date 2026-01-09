@@ -144,7 +144,7 @@ class RaceInfoApp:
                     ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), 
                     ('4. PRISM_SCENE分析のみ実行（既にSCENE分析まで完了していること！）', 4), 
                     ('5. 全モジュール一括実行', 5),
-                    ('6. オリジナルテキストから実況音声を再生成', 6)]
+                    ('6. レース実況オーディオ再生成（既に実況テキストを作っていること！）', 6)]
             for i, (txt, val) in enumerate(opts):
                 ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
 
