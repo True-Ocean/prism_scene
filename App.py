@@ -38,23 +38,25 @@ def show_new_auth():
             st.rerun()
 
         st.divider()
-        # 🔑 会員限定コンテンツの内容を表示
+        # 🔑 スペシャルコンテンツの内容を表示
         with open("pages/20251228_有馬記念.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
             code = compile(f.read(), "pages/20251228_有馬記念.py", 'exec')
             exec(code, globals())
 
-    # 3. 未認証の場合：パスワード入力欄を表示
+    # 3. 未認証の場合：パスコード入力欄を表示
     else:
-        st.title('🔐 会員認証')
-        password = st.text_input("パスワードを入力してください（会員限定）", type="password")
+        st.title('🔐 パスコード認証')
+        password = st.text_input("パスコードを入力してください", type="password")
         
         if st.button("認証する"):
-            # 🔐 Secrets からパスワードを読み込んで比較
-            if password == st.secrets["APP_PASSWORD"]: 
+            # 🔐 Secrets からパスコードを読み込んで比較
+            if password == st.secrets["APP_PASSCORD"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("パスワードが違います。")
+                st.error("パスコードが違います。")
+        
+        st.write('note（https://note.com/prism_scene）の記事内にパスコードを無料公開しています。noteでシャノワールをフォローしていただければ嬉しいです。 ')
 
 def show_race_content(file_name):
     try:
@@ -81,8 +83,8 @@ def show_races():
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
     race_options = {
         "選択してください": None,
-        "2026/1/4 中山金杯（G3）": "20260104_中山金杯.py", #=============================== ファイル名を変更 =====================================
-        "2025/1/4 京都金杯（G3）": "20260104_京都金杯.py"  #=============================== ファイル名を変更 =====================================
+        "2026/1/11 フェアリーS（G3）": "20260111_フェアリーS.py", #=============================== ファイル名を変更 =====================================
+        "2025/1/12 シンザン記念（G3）": "20260112_シンザン記念.py"  #=============================== ファイル名を変更 =====================================
     }
 
     selected_label = st.selectbox("今週のレースレポートを選択", options=list(race_options.keys()))
@@ -123,7 +125,7 @@ archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂")
 # --- 2. ナビゲーションの定義 ---
 pg = st.navigation({
     "PRISM_SCENE": [home_page],
-    "会員限定コンテンツ": [new_page],
+    "スペシャルコンテンツ": [new_page],
     "フリーコンテンツ": [race_page],
     "アーカイブ": [archive_page] # サイドバーには1項目だけ表示される
 })
