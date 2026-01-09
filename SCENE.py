@@ -493,14 +493,18 @@ def generate_race_broadcast(final_story, final_report, client, model):
         3. **隊列描写の徹底**:         
         - 序盤は「先頭は〇番〇〇、2番手〇番〇〇、内〇番〇〇、外〇番〇〇」という番と馬名を併用する形式（例：7番ディープインパクト）を多用。ただし、枠番は使わないこと。
         - 逃げ、先行が多い場合、スタート直後の先行争いを詳しめに描写。
-        - 隊列が落ち着いたら、それぞれ何馬身離れているか、可能な範囲で説明（例：「1馬身差で〇〇」「〇〇に並ぶように〇〇」「2馬身離れて〇〇」など）
-        - 中盤以降は「先頭は〇〇、2番手〇〇、内〇〇、外〇〇」と馬名のみの形式を多用。
+        - 隊列が落ち着いたら、改めて全馬の名前と位置どりを、前から順に簡潔に説明していくこと。場合に応じて何馬身離れているかも補足すること。
+        （例）「先頭は〇〇、1馬身離れて〇〇、その内〇〇、半馬身差で〇〇、・・・2馬身離れて〇〇、最後方に〇〇という隊列」
         - 「〜が素晴らしい走り」「〜のドラマが」等の感想は一切不要。
         4. **後半（4角〜最終直線）の加速**: 
         - 1文を5文字〜15文字程度に短縮。
-        - 最終直線は「〇〇上がってきた！」「内から〇〇！」「外は〇〇！」「〇〇か、〇〇か、〇〇、〇〇、並んでゴール！」といった形式で、体言止めを多用すること。
-        - 余計な修飾語は一切排除し、手応えの良い馬に絞って短めのテキストとすることでスピード感を出すこと。【禁止】最終直線の間は、絶対に語尾を「ですます」調にしないこと。
-        5. **入線後**: 1着を確定させ、2着、3着と思われる馬を伝え、レース展開によって「接戦」「際どい」「圧勝」「快勝」「余裕」等の表現で簡潔に。
+        - 最終直線では、先頭争いに加わる馬を最大でも5頭までに絞り、馬名と位置取りのみとすること。
+        【禁止】最終直線の間は、絶対に語尾を「ですます」調にしないこと。
+        （例）「〇〇上がってきた！」「内から〇〇！」「外は〇〇！」「馬群の中から一気に〇〇！」「〇〇先頭！」「大外から〇〇きた！」「〇〇か、〇〇か、〇〇！〇〇！」
+        5. **入線後**:
+        - 1着、2着、3着と思われる馬を伝え、レース展開によって「接戦」「際どい」「圧勝」「快勝」「余裕」等の表現で簡潔に。
+        - 4着以下は不要です。
+        - 最後に、「確定までしばらくお待ちください。」で締めてください。
 
         【データ参照】
         出走馬: {horse_info}
@@ -561,6 +565,7 @@ async def save_race_audio(text, filename):
         "最後方": "さいこうほう",
         "向正面": "むこうじょうめん",
         "向こう正面": "むこうじょうめん",
+        "数馬身": "すうばしん",
         "前目": "まえめ",
         "外々": "そとそと",
         "大外": "おおそと",
@@ -568,6 +573,7 @@ async def save_race_audio(text, filename):
         "末脚": "すえあし",
         "好スタート": "こうスタート", 
         "脚色": "あしいろ", 
+        "先行勢": "せんこうぜい",
         "先行": "せんこう",
         "追込": "追い込み",
         "内": "うち",
@@ -595,7 +601,7 @@ async def save_race_audio(text, filename):
     clean_text = clean_text.rstrip() + " 。 。 。 。 " 
 
     # --- 3. 分割と生成 ---
-    split_keywords = ["最終コーナー", "第4コーナー", "最後の直線", "最終直線", "残り200", "残り100", "ゴール前"]
+    split_keywords = ["最終コーナー", "第4コーナー", "最後の直線", "最終直線", "残り200", "残り100"]
     parts = []
     for kw in split_keywords:
         if kw in clean_text:
@@ -609,10 +615,11 @@ async def save_race_audio(text, filename):
     # voice_name = "ja-JP-KeitaNeural"
 
     if len(parts) == 2:
-        print(f"{g.race_name}：レース実況音声ファイル生成中...")
+        print(f"{g.race_name}：レース実況オーディオ生成中...")
+        print('')
         comm1 = edge_tts.Communicate(parts[0], voice_name, rate="+35%", pitch="+2Hz")
         # クライマックスはより高く、情熱的に
-        comm2 = edge_tts.Communicate(parts[1], voice_name, rate="+45%", pitch="+12Hz", volume="+50%")
+        comm2 = edge_tts.Communicate(parts[1], voice_name, rate="+40%", pitch="+8Hz", volume="+20%")
         
         await comm1.save("temp_1.mp3")
         await comm2.save("temp_2.mp3")
@@ -623,11 +630,11 @@ async def save_race_audio(text, filename):
         if os.path.exists("temp_1.mp3"): os.remove("temp_1.mp3")
         if os.path.exists("temp_2.mp3"): os.remove("temp_2.mp3")
     else:
-        print(f"{g.race_name}：レース実況音声ファイル生成中...")
+        print(f"{g.race_name}：レース実況オーディオ生成中...")
         comm = edge_tts.Communicate(clean_text, voice_name, rate="+30%", pitch="+5Hz")
         await comm.save(filename)
 
-    print(Fore.YELLOW + f"{g.race_name}：レース実況音声ファイル生成完了" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"{g.race_name}：レース実況オーディオ生成完了" + Style.RESET_ALL)
 
     return clean_text
 
