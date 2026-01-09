@@ -65,8 +65,6 @@ class RaceInfoApp:
         # ウィジェットの作成と配置
         self.create_widgets()
         
-        # マウスを「分析スタート」ボタン付近へ移動
-        pgui.moveTo(x=200, y=550)
 
     def load_default_data(self):
         """初期表示データの読み込み"""
@@ -145,7 +143,8 @@ class RaceInfoApp:
                     ('2. PRISM分析のみ実行（既にデータ取得済であること！）', 2), 
                     ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), 
                     ('4. PRISM_SCENE分析のみ実行（既にSCENE分析まで完了していること！）', 4), 
-                    ('5. 全モジュール一括実行', 5)]
+                    ('5. 全モジュール一括実行', 5),
+                    ('6. オリジナルテキストから実況音声を再生成', 6)]
             for i, (txt, val) in enumerate(opts):
                 ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
 
@@ -332,7 +331,7 @@ class RaceInfoApp:
         self.app.deiconify()
         
         # マウスを「情報を更新」ボタンに配置
-        pgui.moveTo(650, 790)
+        pgui.moveTo(650, 800)
 
         # メインループ開始
         self.app.mainloop()
