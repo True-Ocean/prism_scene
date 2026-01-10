@@ -579,7 +579,7 @@ elif sub_menu == "とある世界線のレース実況":
     for old, new in replace_dict.items():
         broadcast = broadcast.replace(old, new)
 
-    st.write(broadcast)
+    st.text(broadcast)
 
     st.divider()
     st.subheader(f"💡 解説")
