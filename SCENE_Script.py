@@ -38,13 +38,18 @@ def SCENE_Script():
     PRISM_B = pd.read_sql('SELECT * FROM "PRISM_B"', con=engine)
     PRISM_RGB = pd.read_sql('SELECT * FROM "PRISM_RGB"', con=engine)
     HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
+    RaceTable_df = pd.read_sql('SELECT * FROM "RaceTable"', con=engine)
 
-    # 各馬ごとに「年齢」の最大値をとりつつ、最新の「性別」「勝負服色」を取得する
-    SCENE_Attributes_df = HorseRecords_df.groupby('馬名').agg({
-    '年齢': 'max',
-    '性別': 'first',      # 日付降順なので、一番上（最新）の性別を取得
-    '勝負服色': 'first'    # 同様に最新の勝負服色を取得
+    # 1. 出馬表 (RaceTable_df) から最新の「性別」と「年齢」を取得する
+    current_attributes = RaceTable_df[['馬名', '性別', '年齢']].drop_duplicates(subset=['馬名'])
+
+    # 2. 実績データ (HorseRecords_df) からは「勝負服色」のみを取得する
+    cloth_colors = HorseRecords_df.sort_values('日付', ascending=False).groupby('馬名').agg({
+        '勝負服色': 'first'
     }).reset_index()
+
+    # 3. 属性情報を統合する
+    SCENE_Attributes_df = pd.merge(current_attributes, cloth_colors, on='馬名', how='left')
 
     # 馬名の重複を完全に排除（もしaggで漏れがあった場合用）
     SCENE_Attributes_df = SCENE_Attributes_df.drop_duplicates(subset=['馬名'])
