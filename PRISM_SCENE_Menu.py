@@ -91,7 +91,7 @@ class RaceInfoApp:
         self.var_td = StringVar()
         self.var_distance = StringVar()
         self.var_cond = StringVar()
-        self.var_exe_opt = IntVar(value=5)
+        self.var_exe_opt = IntVar(value=6)
         self.scene_vars = {}
 
     def create_widgets(self):
@@ -140,11 +140,12 @@ class RaceInfoApp:
             f3.grid(row=2, column=0, sticky='ew', pady=5)
 
             opts = [ ('1. データ取得のみ実行', 1), 
-                    ('2. PRISM分析のみ実行（既にデータ取得済であること！）', 2), 
-                    ('3. SCENE分析のみ実行（既にPRISM分析まで完了していること！）', 3), 
-                    ('4. PRISM_SCENE分析のみ実行（既にSCENE分析まで完了していること！）', 4), 
-                    ('5. 全モジュール一括実行', 5),
-                    ('6. レース実況オーディオ再生成（/Media Files/Broadcast.txtから）', 6)]
+                    ('2. PRISM分析まで実行', 2), 
+                    ('3. SCENE分析（キャラ設定・ライバル分析）のみ実行', 3), 
+                    ('4. SCENE分析（レース・シミュレーション）のみ実行', 4), 
+                    ('5. PRISM_SCENE分析（物語・レース実況オーディオ生成）のみ実行', 5), 
+                    ('6. 全モジュール一括実行', 6),
+                    ('7. レース実況オーディオ再生成（/Media Files/Broadcast.txtから）', 7)]
             for i, (txt, val) in enumerate(opts):
                 ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
 
