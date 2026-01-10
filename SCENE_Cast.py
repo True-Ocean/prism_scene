@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 import google.genai as genai 
 from dotenv import load_dotenv 
 import os
+import re
+import random
 import pandas as pd
 from sqlalchemy import create_engine
 from pydantic import BaseModel, Field # JSONスキーマの定義に利用
@@ -151,6 +153,25 @@ def analyze_single_horse(features_text, blood_text, race_info, max_retries=5):
     特徴（数値データ）と血統テキストを統合してGeminiに渡し、
     構造化されたキャラクターデータを取得する。
     """
+
+    # 1. features_text から「牝 + 数字」というパターンを探す
+    # re.search(r'牝\d+', text) は「牝」の後に1つ以上の数字が続く箇所を探します
+    is_filly_or_mare = bool(re.search(r'牝\d+', features_text))
+    
+    # 2. 牝馬の場合のキャラクタータイプ抽選
+    type_instruction = ""
+    if is_filly_or_mare:
+        types = ['男まさり', '姉御肌', '妖艶', 'おっとり', 'ツンデレ', 'お嬢様', '高飛車', '優等生', '不良', '普通']
+        weights = [8, 8, 7, 10, 10, 10, 10, 10, 7, 20]
+        selected_type = random.choices(types, weights=weights)[0]
+        type_instruction = f"この馬は【牝馬】です。設定タイプとして必ず【{selected_type}タイプ】を選択し、それに矛盾しない「一人称」と「口調」を徹底してください。"
+    else:
+        # 牡馬・セン馬のタイプ設定
+        # 熱血、エリート、武士、不敵なアウトロー、お調子者など
+        m_types = ['熱血', 'クール', '真面目', 'アウトロー', '正統派', 'お調子者', '寡黙', '自信家', '普通']
+        m_weights = [10, 10, 10, 10, 10, 10, 10, 10, 20]
+        selected_type = random.choices(m_types, weights=m_weights)[0]
+        type_instruction = f"この馬は【牡馬またはセン馬】です。設定タイプとして必ず【{selected_type}タイプ】を選択し、それに矛盾しない「一人称」と「口調」を徹底してください。"
     
     analysis_prompt = f"""
     提供された「能力データ」と「5代血統表」を分析し、キャラクター設定を生成してください。
@@ -164,6 +185,7 @@ def analyze_single_horse(features_text, blood_text, race_info, max_retries=5):
     1. **血統・能力分析**: 
        血統背景（名馬やクロス）が、現在の能力数値（先行指数、基礎能力、適合率等）にどう影響しているか、物語的に分析してください（200字程度）。
     2. **キャラクター設定**: 
+       {type_instruction}
        分析結果、性別、年齢、毛色、そして「勝負服色」のイメージを考慮し、「タイプ」「外見」「性格」「一人称」「口調」を構成してください（200字程度）。
        「一人称」「口調」については、性別、年齢（2歳：幼い、3歳：若い、4歳：青年、5歳：成人、6歳：壮年、7歳以上：老齢）と、血統から推察される家の育ちを考慮して下さい。
        （参考）一人称の年齢順: ぼく、わたし、おれ、あたい、うち、おいら、僕、私、俺、自分、拙者、わし、わしゃ 等。口調の例: ですます調、丁寧、優しい、厳しい、関西弁、お嬢様、侍 等。
