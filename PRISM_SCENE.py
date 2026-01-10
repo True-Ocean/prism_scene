@@ -15,6 +15,7 @@ import pandas as pd
 import numpy as np
 import math
 import re
+import random
 from datetime import datetime
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
@@ -156,7 +157,7 @@ print(Style.RESET_ALL)
 # PRISM分析の実行
 #====================================================
 
-if g.exe_opt in [2, 5]:
+if g.exe_opt in [2, 6]:
 
     #====================================================
     # PRISM分析の実行
@@ -300,10 +301,10 @@ if g.exe_opt in [2, 5]:
 
 
 #====================================================
-# SCENE分析の実行
+# SCENE分析（キャラ設定・ライバル分析）の実行
 #====================================================
 
-if g.exe_opt in [3, 5]:
+if g.exe_opt in [3, 6]:
 
     print(Fore.GREEN)
     print('====================================================')
@@ -388,9 +389,11 @@ if g.exe_opt in [3, 5]:
     print(Style.RESET_ALL)
 
 
-    #====================================================
-    # SCENE分析の実行
-    #====================================================
+#====================================================
+# SCENE分析（レース・シミュレーション）の実行
+#====================================================
+
+if g.exe_opt in [4, 6]:
 
     print(Fore.GREEN)
     print('====================================================')
@@ -399,6 +402,10 @@ if g.exe_opt in [3, 5]:
     print(Style.RESET_ALL)
     print('SCENE分析を実行しています。')
     print('')
+
+    RaceTable_df = pd.read_sql(sql='SELECT * FROM "RaceTable";', con=engine)
+    SCENE_Cast_df = pd.read_sql(sql='SELECT * FROM "SCENE_Cast";', con=engine)
+    SCENE_Ensemble_df = pd.read_sql(sql='SELECT * FROM "SCENE_Ensemble";', con=engine)
 
     # 生成データの保存先フォルダ
     save_dir_path = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
@@ -420,10 +427,10 @@ if g.exe_opt in [3, 5]:
 
 
 #====================================================
-# PRISM_SCENE分析の実行
+# PRISM_SCENE分析（物語・レース実況生成）の実行
 #====================================================
 
-if g.exe_opt in [4, 5]:
+if g.exe_opt in [5, 6]:
 
     print(Fore.GREEN)
     print('====================================================')
@@ -469,12 +476,12 @@ if g.exe_opt in [4, 5]:
     shutil.copy(f'{work_dir}Broadcast.txt', race_dir)
     shutil.copy(f'{work_dir}Broadcast.mp3', race_dir)
 
-if g.exe_opt in [3]:
+if g.exe_opt in [3, 4]:
     print(Fore.RED)
     print('SCENE分析が完了しました!')
     print(Style.RESET_ALL)
 
-if g.exe_opt in [4, 5]:
+if g.exe_opt in [5, 6]:
     print(Fore.RED)
     print('PRISM_SCENE分析が完了しました!')
     print(Style.RESET_ALL)
@@ -484,7 +491,7 @@ if g.exe_opt in [4, 5]:
 # レース実況オーディオの再生成の実行
 #====================================================
 
-if g.exe_opt in [6]:
+if g.exe_opt in [7]:
 
     print(Fore.GREEN)
     print('====================================================')

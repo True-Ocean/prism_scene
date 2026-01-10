@@ -511,7 +511,7 @@ def generate_race_broadcast(final_story, final_report, client, model):
         展開・結果: {final_story} (ここにある位置関係と結果のみを忠実に抽出してください。)
         """
 
-    print(f"{g.race_name}：レース実況生成中...")
+    print(f"{g.race_name}：レース実況テキスト生成中...")
     
     response = client.models.generate_content(
         model=model,
@@ -522,7 +522,7 @@ def generate_race_broadcast(final_story, final_report, client, model):
         }
     )
     
-    print(Fore.YELLOW + f"{g.race_name}：レース実況生成完了" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"{g.race_name}：レース実況テキスト生成完了" + Style.RESET_ALL)
     print('')
 
     return response.text
