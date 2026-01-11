@@ -151,7 +151,7 @@ class RaceInfoApp:
 
             # --- Section 4: シーン選択 ---
             # 3列表示のチェックボックスの場合
-            f4 = ttk.Labelframe(container, text=' シーン選択 ', padding=10)
+            f4 = ttk.Labelframe(container, text=' シーン選択 （5, 6 実行時のみチェック）', padding=10)
             f4.grid(row=3, column=0, sticky='ew', pady=5)
             
             # 3列分の重みを設定
@@ -194,7 +194,7 @@ class RaceInfoApp:
             btn_frame.columnconfigure(1, weight=1)
 
             ttk.Button(btn_frame, text='情報を更新', width=20, command=self.race_info_get).grid(row=0, column=0, padx=10, pady=10, sticky=E)
-            ttk.Button(btn_frame, text='分析スタート', width=20, style='Action.TButton', command=self.analysis_start).grid(row=0, column=1, padx=10, pady=10, sticky=W)
+            ttk.Button(btn_frame, text='スタート', width=20, style='Action.TButton', command=self.analysis_start).grid(row=0, column=1, padx=10, pady=10, sticky=W)
 
     def race_info_get(self):
         """外部ファイルから情報を再読み込み"""
