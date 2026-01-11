@@ -185,6 +185,8 @@ def Data_Getter():
     race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
     # 作業用フォルダの設定
     work_dir = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/'
+    # メディアフォルダの設定
+    media_dir = f'/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 
     # アーカイブフォルダがまだ存在していない場合
     if not os.path.exists(race_dir):
@@ -321,6 +323,39 @@ def Data_Getter():
             shutil.copy(f'{race_dir}Blood{(i+1):02d}.html', work_dir)
         shutil.copy(f'{race_dir}Hanro.csv', work_dir)
         shutil.copy(f'{race_dir}CW.csv', work_dir)
+
+        if g.exe_opt in [3, 4, 5, 6, 7]:
+            
+            # レースフォルダから作業フォルダにコピー
+            shutil.copy(f'{race_dir}PRISM_R.csv', work_dir)
+            shutil.copy(f'{race_dir}PRISM_RG.csv', work_dir)
+            shutil.copy(f'{race_dir}PRISM_B.csv', work_dir)
+            shutil.copy(f'{race_dir}PRISM_RGB.csv', work_dir)
+
+            # レースフォルダからメディアフォルダにコピー
+            shutil.copy(f'{race_dir}PRISM_R.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_G.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_RG.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_RGB.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_B_CW.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_B_CW_Lap.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_B_CW_Time.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_B_Hanro.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_B_Hanro_Lap.png', media_dir)
+            shutil.copy(f'{race_dir}PRISM_B_Hanro_Time.png', media_dir)
+
+        if g.exe_opt in [4, 5, 6, 7]:
+            # レースフォルダからメディアフォルダにコピー
+            shutil.copy(f'{race_dir}SCENE_Cast.csv', media_dir)
+            shutil.copy(f'{race_dir}SCENE_Ensemble.csv', media_dir)
+        
+        if g.exe_opt in [5, 6, 7]:
+            # レースフォルダからメディアフォルダにコピー
+            shutil.copy(f'{race_dir}Final_Report.csv', media_dir)
+            shutil.copy(f'{race_dir}Final_Mark.csv', media_dir)
+            shutil.copy(f'{race_dir}Final_Drama.txt', media_dir)
+            shutil.copy(f'{race_dir}Broadcast.txt', media_dir)
+            shutil.copy(f'{race_dir}Broadcast.mp3', media_dir)
 
         print(Fore.YELLOW)
         print('PRISM_SCENE分析に必要なデータをアーカイブフォルダから取得しました。')

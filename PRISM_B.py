@@ -502,6 +502,7 @@ if __name__ == "__main__":
 
     # PRISM_Bの実行
     PRISM_B_df = PRISM_B_Analysis(RaceTable_df, HorseRecords_df, df_cw, df_hanro, g.race_date)
+    PRISM_B_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_B.csv', index=False, encoding="utf-8")
     PRISM_B_df.to_sql('PRISM_B', con=engine, if_exists = 'replace', index=False)
 
     # PRISM_RGの読み込み
@@ -509,6 +510,7 @@ if __name__ == "__main__":
 
     # PRISM_RGBの実行
     PRISM_RGB_df = Calculate_PRISM_RGB(PRISM_RG_df, PRISM_B_df)
+    PRISM_RGB_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RGB.csv', index=False, encoding="utf-8")
     PRISM_RGB_df.to_sql('PRISM_RGB', con=engine, if_exists = 'replace', index=False)
 
     # PRISM_Bのビジュアル化実行

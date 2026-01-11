@@ -701,7 +701,7 @@ def SCENE_Ensemble_Analysis(horse_records_df):
     # 5. 「人気度優先」でソートするための準備
     Final_List_df['Abs_Order_Diff'] = Final_List_df['Wtd_Order_Diff'].abs()
 
-# 6. 【修正】ソート基準の優先順位を変更
+    # 6. 【修正】ソート基準の優先順位を変更
     # 1. Total_Matches (降順: 対戦が多いほど上位)
     # 2. Average_Popularity_Score (昇順: 人気があるほど上位)
     # 3. Abs_Order_Diff (昇順: 僅差であるほど上位)
@@ -730,12 +730,11 @@ def SCENE_Ensemble_Analysis(horse_records_df):
 
     Top_Rival_List_df['ライバル関係'] = narrative_list
 
-    Top_Rival_List_df.to_sql('SCENE_Ensemble', con=engine, if_exists = 'replace', index=False)
-    Top_Rival_List_df.to_csv('/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/SCENE_Ensemble.csv', index=False, encoding="utf-8")
-
     return Top_Rival_List_df
 
 if __name__ == "__main__":
 
     HorseRecords_df = pd.read_sql(sql = f'SELECT * FROM "HorseRecords";', con=engine)
-    SCENE_Ensemble_Analysis(HorseRecords_df)
+    SCENE_Ensemble_df = SCENE_Ensemble_Analysis(HorseRecords_df)
+    SCENE_Ensemble_df.to_sql('SCENE_Ensemble', con=engine, if_exists = 'replace', index=False)
+    SCENE_Ensemble_df.to_csv('/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/SCENE_Ensemble.csv', index=False, encoding="utf-8")

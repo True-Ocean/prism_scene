@@ -33,10 +33,11 @@ def SCENE_Script():
     engine = get_engine()
 
     # データの読み込み
-    PRISM_R = pd.read_sql('SELECT * FROM "PRISM_R"', con=engine)
-    PRISM_RG = pd.read_sql('SELECT * FROM "PRISM_RG"', con=engine)
-    PRISM_B = pd.read_sql('SELECT * FROM "PRISM_B"', con=engine)
-    PRISM_RGB = pd.read_sql('SELECT * FROM "PRISM_RGB"', con=engine)
+    PRISM_R = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_R.csv', encoding = 'utf-8')
+    PRISM_RG = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RG.csv', encoding = 'utf-8')
+    PRISM_B = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_B.csv', encoding = 'utf-8')
+    PRISM_RGB = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RGB.csv', encoding = 'utf-8')
+
     HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
     RaceTable_df = pd.read_sql('SELECT * FROM "RaceTable"', con=engine)
 

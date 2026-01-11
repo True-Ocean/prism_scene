@@ -411,8 +411,12 @@ if __name__ == "__main__":
     # PRISM_R分析の実行
     PRISM_R_df = PRISM_R_Analysis(PRISM_Base_df, RaceTable_df,)
 
+    # csvとして保存
+    PRISM_R_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_R.csv', index=False, encoding="utf-8")
+
     # PostgreSQLへの保存
     PRISM_R_df.to_sql('PRISM_R', con=engine, if_exists='replace', index=False)
+    
 
     # 実行
     PRISM_R_Visualization(PRISM_R_df)

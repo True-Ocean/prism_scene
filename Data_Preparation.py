@@ -158,9 +158,6 @@ def Horse_Records_Preparation(race_table_df):
     # データフレームの最終化
     HorseRecords_df = pd.concat(list_uma_df, axis=0, ignore_index=True)
 
-    # PostgreSQLに上書き保存
-    HorseRecords_df.to_sql(f'HorseRecords', con=engine, if_exists = 'replace')
-
     return HorseRecords_df
 
 
@@ -205,6 +202,6 @@ if __name__ == '__main__':
 
     # PRISM分析に必要となるDFをPostgreSQLに保存
     RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace')
-    HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace')
+    HorseRecords_df.to_sql(f'HorseRecords', con=engine, if_exists = 'replace')
     df_hanro.to_sql('Hanro', con=engine, if_exists = 'replace')
     df_cw.to_sql('CW', con=engine, if_exists = 'replace')
