@@ -145,13 +145,14 @@ class RaceInfoApp:
                     ('4. SCENE分析（レース・シミュレーション）のみ実行', 4), 
                     ('5. PRISM_SCENE分析（物語・レース実況オーディオ生成）のみ実行', 5), 
                     ('6. 全モジュール一括実行', 6),
-                    ('7. レース実況オーディオ再生成（/Media Files/Broadcast.txtから）', 7)]
+                    ('7. レース実況オーディオ再生成（/Media Files/Broadcast.txtから）', 7),
+                    ('8. アクチュアル・ドラマ と アフター・ストーリー生成', 8)]
             for i, (txt, val) in enumerate(opts):
                 ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
 
             # --- Section 4: シーン選択 ---
             # 3列表示のチェックボックスの場合
-            f4 = ttk.Labelframe(container, text=' シーン選択 （5, 6 実行時のみチェック）', padding=10)
+            f4 = ttk.Labelframe(container, text=' シーン選択 （5, 6, 8 実行時のみチェック）', padding=10)
             f4.grid(row=3, column=0, sticky='ew', pady=5)
             
             # 3列分の重みを設定
@@ -332,7 +333,7 @@ class RaceInfoApp:
         self.app.deiconify()
         
         # マウスを「情報を更新」ボタンに配置
-        pgui.moveTo(650, 820)
+        pgui.moveTo(650, 830)
 
         # メインループ開始
         self.app.mainloop()

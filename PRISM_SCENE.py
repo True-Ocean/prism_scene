@@ -54,6 +54,7 @@ import SCENE_Cast
 import SCENE_Ensemble
 import SCENE
 import Race_Audio_Maker
+import After_Story_Extractor
 
 # PostgreSQLの接続設定
 dotenv_path = '/Users/trueocean/Desktop/Python_Code/Project_Key/.env'
@@ -516,7 +517,7 @@ if g.exe_opt in [5, 6]:
 # レース実況オーディオの再生成の実行
 #====================================================
 
-if g.exe_opt in [7]:
+if g.exe_opt == 7:
 
     print(Fore.GREEN)
     print('====================================================')
@@ -538,3 +539,37 @@ if g.exe_opt in [7]:
     shutil.copy(f'{media_dir}Broadcast.mp3', race_dir)
 
     print('')
+
+#====================================================
+# アクチュアル・ドラマ、アフター・ストーリーの生成
+#====================================================
+
+if g.exe_opt == 8:
+
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  アクチュアル・ドラマ、アフター・ストーリー生成')
+    print('====================================================')
+    print(Fore.RED)
+    input('対象のレース結果を、TFJVから作業フォルダに保存済みであることを確認して Enter >> ')
+    print(Style.RESET_ALL)
+
+    # データフレームの読み込み
+    SCENE_Cast_df = pd.read_csv(f'{media_dir}SCENE_Cast.csv', encoding = 'utf-8')
+    SCENE_Ensemble_df = pd.read_csv(f'{media_dir}SCENE_Ensemble.csv', encoding = 'utf-8')
+    RaceResult_df = pd.read_csv(f'{work_dir}RaceResult.csv', encoding = 'cp932')
+
+    # ファイナル・ドラマ生成
+    actual_drama = After_Story_Extractor.Actual_Race_Projector(SCENE_Cast_df, SCENE_Ensemble_df, RaceResult_df, client, MODEL)
+    save_drama_name = f'{media_dir}Actual_Drama.txt'
+    SCENE.save_text_to_file(actual_drama, save_drama_name)
+
+    # アフター・ストーリー生成
+    after_story = After_Story_Extractor.After_Story_Extractor(actual_drama, RaceResult_df, SCENE_Cast_df, SCENE_Ensemble_df, client, MODEL)
+    save_story_name = f'{media_dir}After_Story.txt'
+    SCENE.save_text_to_file(after_story, save_story_name)
+
+    # 生成したデータをアーカイブフォルダにコピー
+    shutil.copy(f'{media_dir}Actual_Drama.txt', race_dir)
+    shutil.copy(f'{media_dir}After_Story.txt', race_dir)
+    shutil.copy(f'{work_dir}RaceResult.csv', race_dir)

@@ -324,7 +324,7 @@ def Data_Getter():
         shutil.copy(f'{race_dir}Hanro.csv', work_dir)
         shutil.copy(f'{race_dir}CW.csv', work_dir)
 
-        if g.exe_opt in [3, 4, 5, 6, 7]:
+        if g.exe_opt in [3, 4, 5, 6, 7, 8]:
             
             # レースフォルダから作業フォルダにコピー
             shutil.copy(f'{race_dir}PRISM_R.csv', work_dir)
@@ -344,15 +344,17 @@ def Data_Getter():
             shutil.copy(f'{race_dir}PRISM_B_Hanro_Lap.png', media_dir)
             shutil.copy(f'{race_dir}PRISM_B_Hanro_Time.png', media_dir)
 
-        if g.exe_opt in [4, 5, 6, 7]:
+        if g.exe_opt in [4, 5, 6, 7, 8]:
             # レースフォルダからメディアフォルダにコピー
             shutil.copy(f'{race_dir}SCENE_Cast.csv', media_dir)
             shutil.copy(f'{race_dir}SCENE_Ensemble.csv', media_dir)
         
-        if g.exe_opt in [5, 6, 7]:
+        if g.exe_opt in [5, 6, 7, 8]:
             # レースフォルダからメディアフォルダにコピー
             shutil.copy(f'{race_dir}Final_Report.csv', media_dir)
             shutil.copy(f'{race_dir}Final_Mark.csv', media_dir)
+        
+        if g.exe_opt in [7, 8]:
             shutil.copy(f'{race_dir}Final_Drama.txt', media_dir)
             shutil.copy(f'{race_dir}Broadcast.txt', media_dir)
             shutil.copy(f'{race_dir}Broadcast.mp3', media_dir)
