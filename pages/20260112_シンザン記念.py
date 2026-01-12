@@ -126,7 +126,7 @@ with st.sidebar:
     elif category == "アフター・シーン":
         sub_menu = st.selectbox(
             "アフター・シーンの項目",
-            ["とある世界線の物語（現実編）", "アフター・ストーリー"]
+            ["現実世界の物語", "アフター・ストーリー"]
         )
 
 # --- メイン画面の表示 ---
@@ -591,10 +591,10 @@ elif sub_menu == "とある世界線のレース実況":
     st.subheader(f"💡 解説")
     st.write(f"「とある世界線の物語」のレース展開をベースに、純粋なレース実況音声を生成しています。（by Gemini API）")
 
-elif sub_menu == "とある世界線の物語（現実編）":
+elif sub_menu == "現実世界の物語":
     st.write("")
     st.write("")
-    st.write("レース結果を反映した『とある世界線の物語（現実編）』をお楽しみください。")
+    st.write("レース結果を反映した『現実世界の物語』をお楽しみください。")
     st.divider()
     # actual_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Actual_Drama.txt")
     # st.text(actual_drama)
