@@ -55,9 +55,8 @@ def PRISM_Base(engine, horse_records_df, base_weight=58.0):
     standards_df = pd.read_sql('SELECT * FROM race_standards', con=engine)
     
     # 2. 分析対象馬のデータと基準データを結合
-    # 走破タイム0を除外（海外レース等でデータがない場合の実績を除外）し、今回のレースのTD（芝かダート）でフィルタリング
+    # 走破タイム0を除外（海外レース等でデータがない場合の実績を除外）
     horse_records_df = horse_records_df[horse_records_df['走破タイム'] > 0]
-    horse_records_df = horse_records_df[horse_records_df['TD'] == g.td]
 
     pdf = horse_records_df.copy()
     pdf = pd.merge(pdf, standards_df, on=['場所', 'TD', '距離', 'クラス名'], how='left')
@@ -165,8 +164,17 @@ def PRISM_R_Analysis(prism_base_df, race_table_df):
         horse_num = info['番']
         current_age = info['年齢']
         
-        h_data = prism_base_df[prism_base_df['馬名'] == horse].copy()
-        if h_data.empty: continue
+        all_h_data = prism_base_df[prism_base_df['馬名'] == horse].copy()
+        if all_h_data.empty: continue
+
+        # 今回のトラック(g.td)に合致するデータのみ抽出
+        h_data = all_h_data[all_h_data['TD'] == g.td].copy()
+        
+        is_first_time_td = False
+        if h_data.empty:
+            # 今回のTD実績がない場合、別TDの全データを使って計算する
+            h_data = all_h_data.copy()
+            is_first_time_td = True
 
         # --- 外れ値のパージ ---
         h_data = h_data[h_data['最終補正偏差値'] >= 30.0].copy()
@@ -277,10 +285,13 @@ def PRISM_R_Analysis(prism_base_df, race_table_df):
         if current_age >= 7: expectancy -= 0.5
         elif current_age == 3: expectancy += 0.5
 
-        # --- '番' を辞書に追加 ---
+        if is_first_time_td:
+            # 今回が初めての芝/ダート転向の場合、スコアを0.95倍
+            expectancy *= 0.95 
+
         final_results.append({
             '馬名': horse,
-            '番': horse_num,  # ← ここに追加
+            '番': horse_num,
             'Base_Score': round(base_s, 2),
             'Last3F_Score': round(f3f_s, 2),
             'PRISM_R_Score': round(expectancy, 2),
