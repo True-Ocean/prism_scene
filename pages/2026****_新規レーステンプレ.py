@@ -123,6 +123,11 @@ with st.sidebar:
             "プリズム・シーンの項目",
             ["とある世界線の物語", "とある世界線のレース実況"]
         )
+    elif category == "アフター・シーン":
+        sub_menu = st.selectbox(
+            "アフター・シーンの項目",
+            ["とある世界線の物語(現実編)", "アフター・ストーリー"]
+        )
 
 # --- メイン画面の表示 ---
 st.title('🐎 2026年**月**日 レース名 分析レポート') # ここを変更 =================================================================
@@ -585,3 +590,30 @@ elif sub_menu == "とある世界線のレース実況":
     st.divider()
     st.subheader(f"💡 解説")
     st.write(f"「とある世界線の物語」のレース展開をベースに、純粋なレース実況音声を生成しています。（by Gemini API）")
+
+elif sub_menu == "とある世界線の物語(現実編)":
+    st.write("")
+    st.write("")
+    st.write("レース結果を反映した『とある世界線の物語（現実編）』をお楽しみください。")
+    st.divider()
+    # actual_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Actual_Drama.txt")
+    # st.text(actual_drama)
+    st.write("準備中")
+
+    st.divider()
+    st.subheader(f"💡 解説")
+    st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、現実世界の物語を生成しています。（by Gemini API）")
+
+elif sub_menu == "アフター・ストーリー":
+    st.write("")
+    st.write("")
+    st.write("レース後、とあるシーンで馬同士が再会する物語をお楽しみください。")
+    st.divider()
+    # after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
+    # st.text(after_story)
+    st.write("準備中")
+
+    st.divider()
+    st.subheader(f"💡 解説")
+    st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、後日談を生成しています。（by Gemini API）")
+

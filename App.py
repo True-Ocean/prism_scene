@@ -132,6 +132,6 @@ pg = st.navigation({
 })
 
 with st.sidebar:
-    st.caption("PRISM_SCENE v3.0")
+    st.caption("PRISM_SCENE v3.1.0")
 
 pg.run()
