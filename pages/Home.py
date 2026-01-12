@@ -4,7 +4,7 @@ import streamlit as st
 
 st.set_page_config(page_title="PRISM_SCENE Home", layout="wide")
 
-st.title("🐎 『PRISM_SCENE』競馬をもっと楽しく！ドラマチックに！")
+st.title("🐎 PRISM_SCENE：競馬をもっと楽しく！ドラマチックに！")
 
 st.divider()
 st.markdown("""
