@@ -64,7 +64,7 @@ def Actual_Race_Projector(cast_df, ensemble_df, final_result, client, model):
     # 必要なカラムを抽出
     for _, row in final_result.iterrows():
         race_context += (f"【{row['馬番']}番 {row['馬名']}】"
-                             f"1角：{row['通過1']} - 2角：{row['通過2']} - 3角：{row['通過3']} - 4角：{row['通過4']} - 着順：{row['確定着順']} (着差：{row['着差']})\n")
+                             f"1角：{row['通過1']}番手 - 2角：{row['通過2']}番手 - 3角：{row['通過3']}番手 - 4角：{row['通過4']}番手 - 着順：{row['確定着順']}着 (着差：{row['着差']})\n")
     
     # 2. 戦術・能力データ (展開に直結する情報を追加)
     tactical_context = ""
@@ -120,7 +120,7 @@ def Actual_Race_Projector(cast_df, ensemble_df, final_result, client, model):
         
         【構成とシーン別指示】
         レースのシーンは{scene_instruction}のみとし、概ね以下の5部構成で執筆してください。
-        必ずレース展開の通りとなるよう、ストーリを構築してください。
+        必ずレース展開の通りとなるよう、特に、各コーナーでの通過順に忠実に、ストーリを構築してください。
         
         ### 1. プロローグ：（レース前の競馬場の描写、緊張感、ゲートインの状況）
         静寂の中に響く蹄の音。観客席のざわめき。馬たちの息遣い。レース前の緊張感を、五感を駆使して描写してください。
@@ -138,7 +138,7 @@ def Actual_Race_Projector(cast_df, ensemble_df, final_result, client, model):
         【運命の設計図】が導き出した結末。勝者の光と敗者の誇り。受け継いだ血が次にどこへ向かうのか、短編小説に相応しい叙情的な余韻で締めくくってください。
 
         
-        【資料：レース展開】
+        【資料：レース展開（各コーナー通過順・着順）】
         {race_context}
         【資料：戦術・能力データ】
         {tactical_context}
