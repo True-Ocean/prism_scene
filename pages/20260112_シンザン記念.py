@@ -596,9 +596,8 @@ elif sub_menu == "現実世界の物語":
     st.write("")
     st.write("レース結果を反映した『現実世界の物語』をお楽しみください。")
     st.divider()
-    # actual_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Actual_Drama.txt")
-    # st.text(actual_drama)
-    st.write("準備中")
+    actual_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Actual_Drama.txt")
+    st.text(actual_drama)
 
     st.divider()
     st.subheader(f"💡 解説")
@@ -609,10 +608,9 @@ elif sub_menu == "後日談":
     st.write("")
     st.write("レース後、とあるシーンで馬同士が再会する後日談をお楽しみください。")
     st.divider()
-    # after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
-    # st.markdown(after_story)
-    st.write("準備中")
-
+    after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
+    st.markdown(after_story)
+    
     st.divider()
     st.subheader(f"💡 解説")
     st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、後日談を生成しています。（by Gemini API）")
