@@ -94,6 +94,16 @@ class RaceInfoApp:
         self.var_exe_opt = IntVar(value=6)
         self.scene_vars = {}
 
+    def update_scene_state(self, *args):
+        """分析オプションの値に応じてシーン選択の有効/無効を切り替える"""
+        opt = self.var_exe_opt.get()
+        # 5, 6, 8 のいずれかであれば 'normal'、それ以外は 'disabled'
+        new_state = 'normal' if opt in [5, 6, 8] else 'disabled'
+                
+        # 全てのチェックボックスの状態を更新
+        for cb in self.scene_checkboxes:
+            cb.configure(state=new_state)
+
     def create_widgets(self):
             """画面レイアウトの構築"""
             # メインコンテナ
@@ -148,16 +158,16 @@ class RaceInfoApp:
                     ('7. レース実況オーディオ再生成（/Media Files/Broadcast.txtから）', 7),
                     ('8. アクチュアル・ドラマ と アフター・ストーリー生成', 8)]
             for i, (txt, val) in enumerate(opts):
-                ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt).grid(row=i, column=0, sticky=W, pady=1)
+                ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt, command=self.update_scene_state).grid(row=i, column=0, sticky=W, pady=1)
 
             # --- Section 4: シーン選択 ---
             # 3列表示のチェックボックスの場合
-            f4 = ttk.Labelframe(container, text=' シーン選択 （5, 6, 8 実行時のみチェック）', padding=10)
-            f4.grid(row=3, column=0, sticky='ew', pady=5)
+            self.f4 = ttk.Labelframe(container, text=' シーン選択 （5, 6, 8 実行時のみチェック）', padding=10)
+            self.f4.grid(row=3, column=0, sticky='ew', pady=5)
             
             # 3列分の重みを設定
             for col in range(3):
-                f4.columnconfigure(col, weight=1)
+                self.f4.columnconfigure(col, weight=1)
 
 
             scene_opts = [ ('スタート', 0), ('先行争い', 1), ('直線', 2), ('最初のコーナー', 3), 
@@ -167,12 +177,12 @@ class RaceInfoApp:
             # デフォルトでチェックを入れたいIDのリスト
             default_checked = [0, 8, 9, 10, 11, 12]
             self.scene_vars = {}
+            self.scene_checkboxes = [] # ★ チェックボックスのウィジェットを保持するリスト
 
             for i, (txt, val) in enumerate(scene_opts):
                 # 現在のvalがリストにあれば True、なければ False を初期値にする
                 is_checked = True if val in default_checked else False
                 var = tk.BooleanVar(value=is_checked) 
-                
                 self.scene_vars[val] = var
                 
                 # # 2列配置の計算
@@ -185,7 +195,12 @@ class RaceInfoApp:
                 row_idx = i // 3  # 3個ごとに次の行へ
                 col_idx = i % 3   # 0, 1, 2 の繰り返し
                 
-                ttk.Checkbutton(f4, text=txt, variable=var).grid(row=row_idx, column=col_idx, sticky=tk.W, padx=10, pady=1)
+                cb = ttk.Checkbutton(self.f4, text=txt, variable=var)
+                cb.grid(row=row_idx, column=col_idx, sticky=tk.W, padx=10, pady=1)
+                self.scene_checkboxes.append(cb) # リストに追加
+
+            # ★ 初期化完了後に現在の選択状態を反映させる
+            self.update_scene_state()
 
 
             # --- Section 5: 実行ボタン ---
