@@ -55,8 +55,9 @@ def PRISM_Base(engine, horse_records_df, base_weight=58.0):
     standards_df = pd.read_sql('SELECT * FROM race_standards', con=engine)
     
     # 2. 分析対象馬のデータと基準データを結合
-    # 走破タイム0を除外（海外レース等でデータがない場合の実績を除外）
+    # 走破タイム0を除外（海外レース等でデータがない場合の実績を除外）し、今回のレースのTD（芝かダート）でフィルタリング
     horse_records_df = horse_records_df[horse_records_df['走破タイム'] > 0]
+    horse_records_df = horse_records_df[horse_records_df['TD'] == g.td]
 
     pdf = horse_records_df.copy()
     pdf = pd.merge(pdf, standards_df, on=['場所', 'TD', '距離', 'クラス名'], how='left')
