@@ -597,7 +597,7 @@ elif sub_menu == "現実世界の物語":
     st.write("レース結果を反映した『現実世界の物語』をお楽しみください。")
     st.divider()
     actual_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Actual_Drama.txt")
-    st.text(actual_drama)
+    st.markdown(actual_drama)
 
     st.divider()
     st.subheader(f"💡 解説")
