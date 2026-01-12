@@ -19,6 +19,7 @@ __pycache__/
 # その他、Gitに入れたくないフォルダやファイル
 Draft_ipynb/
 Media_files/
+SQL/
 .DS_Store
 
 # Streamlitの秘密設定ファイル
