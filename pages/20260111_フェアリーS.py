@@ -611,6 +611,8 @@ elif sub_menu == "アフター・ストーリー":
     st.divider()
     after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
     st.text(after_story)
+    st.markdown(after_story)
+
 
     st.divider()
     st.subheader(f"💡 解説")
