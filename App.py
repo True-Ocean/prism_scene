@@ -12,7 +12,7 @@ components.html(
         <meta property="og:type" content="website">
         <meta property="og:url" content="https://prism-scene.streamlit.app">
         <meta property="og:title" content="PRISM_SCENE">
-        <meta property="og:description" content="プリズム・シーンへようこそ！定量分析レポートからとある世界線の物語まで、競馬コンテンツが満載のプラットフォームです。">
+        <meta property="og:description" content="プリズム・シーンへようこそ！定量分析レポートから『とある世界線の物語』、レース後の『アフター・ストーリー』まで、競馬コンテンツが満載のプラットフォームです。">
     </head>
     """,
     height=0, # 画面には表示させない
