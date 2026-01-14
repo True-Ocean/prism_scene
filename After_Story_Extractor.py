@@ -72,7 +72,7 @@ def Actual_Race_Projector(cast_df, ensemble_df, final_result, client, model):
     for _, row in cast_df.iterrows():
         tactical_context += (f"【{row['番']}番 {row['馬名']}】"
                              f"枠:{row['枠番']}, 脚質:{row['脚質']}, 先行指数:{row['先行指数']}, "
-                             f"安定度:{row['安定度']}, 中何週：{row['中何週']}週, 成長度：{row['調教成長ポイント']} ")
+                             f"実力のムラ:{row['実力のムラ']}, 中何週：{row['中何週']}週, 成長度：{row['調教成長ポイント']} ")
 
     # 3. キャラデータ (心情やセリフに関係する情報を追加)
     character_context = ""
