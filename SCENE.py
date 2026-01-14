@@ -65,7 +65,7 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
         context = ""
         for _, row in df.iterrows():
             blood = row['血統分析'].split("血統分析：")[-1] if "血統分析：" in row['血統分析'] else row['血統分析']
-            context += (f"【{row['番']}番 {row['馬名']}】脚質:{row['脚質']}, 指数:{row['先行指数']}, "
+            context += (f"【{row['番']}番 {row['馬名']}】先行指数:{row['先行指数']}, 脚質:{row['脚質']}, 実力のムラ:{row['実力のムラ']}, "
                         f"適合率:{row['レース条件適合率']}, 最終期待値:{row['最終期待値']}, 血統:{blood[:40]}...\n")
         return context
 
@@ -80,6 +80,60 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
     # 1回分のシミュレーションを実行する関数（スレッド用）
     def process_target_horse(row):
         target_horse = row['馬名']
+        temp_cast_context = ""
+    
+        for _, r in merged_df.iterrows():
+            raw_mura = r['実力のムラ']
+            
+            # --- 解決策：スケーリング補正 ---
+            # 1. 最小保証値（Base）を設定。ここでは例として 2.0 とします。
+            # 2. 元のムラが小さいほど Base に近づけ、大きい場合は元の値を優先する
+            # 下記の計算により、ムラ0の馬は2.0になり、ムラ1の馬は2.4程度、
+            # ムラ3以上の馬は元の値をそのまま活かす、といった調整が可能です。
+            
+            if raw_mura < 3.0:
+                # 3.0未満の馬を 2.0〜3.0 の範囲に押し上げる計算式
+                # (3.0 - raw_mura) / 3.0 は 0〜1 の係数になる
+                adjusted_mura = 2.0 + (raw_mura * (1.0 / 3.0))
+            else:
+                adjusted_mura = raw_mura
+
+            # 主役の馬かどうかで条件分岐
+            if r['馬名'] == target_horse:
+                condition_label = "絶好調"
+                # 主役はムラを最大限に活かす（期待値に下駄を履かせる）
+                multiplier = 1.2
+                # さらに、格上が相手でも「紛れ」を起こすための固定値（下駄）
+                hero_bonus = 1.0
+            else:
+                # 他の馬は通常通りランダムにデキを決定
+                hero_bonus = 0
+                condition_z = np.random.normal(0, 1)
+                if condition_z > 1.5:
+                    condition_label = "絶好調"
+                    multiplier = 1.0
+                elif condition_z > 0.5:
+                    condition_label = "好調"
+                    multiplier = 0.5
+                elif condition_z > -0.5:
+                    condition_label = "普通"
+                    multiplier = 0.0
+                elif condition_z > -1.5:
+                    condition_label = "不調"
+                    multiplier = -0.5
+                else:
+                    condition_label = "絶不調"
+                    multiplier = -1.0
+
+            # 3. 最終期待値を計算 (実力のムラ × 倍率)
+            # ※ multiplierが0(普通)でも、微小なランダム値(0.12等)を加えるとよりリアルです
+            micro_fluctuation = np.random.uniform(-0.1, 0.1)
+            simulated_value = round(r['最終期待値'] + (adjusted_mura * multiplier) + hero_bonus + micro_fluctuation, 2)
+            
+            blood = r['血統分析'].split("血統分析：")[-1] if "血統分析：" in r['血統分析'] else r['血統分析']
+            temp_cast_context += (f"【{r['番']}番 {r['馬名']}】先行指数:{row['先行指数']}, 脚質:{r['脚質']}, "
+                                f"今日の状態:{condition_label}, シミュレーション期待値:{simulated_value}, 血統:{blood[:40]}...\n")
+
         relevant_rivalries = ensemble_df[
             (ensemble_df['馬名_A'] == target_horse) | (ensemble_df['馬名_B'] == target_horse)
         ]
@@ -94,8 +148,8 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
         user_prompt = f"""
             レース：{race_info}
             今回のフォーカス馬（主役）：{target_horse}
-            【出走馬能力データ】
-            {base_cast_context}
+            【出走馬能力データ（今回の世界線のコンディション）】
+            {temp_cast_context}
             【主役馬に関わる重要な因縁・ライバル関係】
             {rivalry_context}
 
@@ -110,23 +164,30 @@ def run_background_simulation_parallel(cast_df, ensemble_df, race_table_df, clie
             ```
         """
         
-        try:
-            # APIリクエスト
-            response = client.models.generate_content(
-                model=model,
-                contents=user_prompt,
-                config={
-                    "system_instruction": system_instruction,
-                    "temperature": 1.0,  # ここで調整。デフォルトは通常1.0前後
-                    "top_p": 0.95,       # 累積確率に基づく制限（あわせて調整が推奨されます）
-                }
-            )
-            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group())
-        except Exception as e:
-            print(f"  エラー ({target_horse}): {e}")
-        return None
+        for attempt in range(3):
+            try:
+                # APIリクエスト
+                response = client.models.generate_content(
+                    model=model,
+                    contents=user_prompt,
+                    config={
+                        "system_instruction": system_instruction,
+                        "temperature": 1.0,  # ここで調整。デフォルトは通常1.0前後
+                        "top_p": 0.95,       # 累積確率に基づく制限（あわせて調整が推奨されます）
+                    }
+                )
+                json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group())
+                break
+
+            except Exception as e:
+                if "503" in str(e) or "overloaded" in str(e):
+                    print(f"  再試行中... ({target_horse}) {attempt+1}回目")
+                    time.sleep(2 + attempt * 2) # 徐々に待ち時間を増やす
+                else:
+                    print(f"  エラー ({target_horse}): {e}")
+                    return None
 
     all_ranks = []
     # ThreadPoolExecutorによる並列実行
@@ -242,6 +303,7 @@ def assign_race_marks_advanced(final_df, ensemble_df):
     # 2. データ型の変換（安全策）
     # 文字列のまま比較してしまうリスクを排除するため、確実に数値化します
     df['win_rate'] = df['勝率'].str.replace('%', '', regex=False).replace('-', '0').replace('', '0').astype(float)
+    df['rentai_rate'] = df['連対率'].str.replace('%', '', regex=False).replace('-', '0').replace('', '0').astype(float)
     df['fukusho_rate'] = df['複勝率'].str.replace('%', '', regex=False).replace('-', '0').replace('', '0').astype(float)
     
     # 最高位も念のため数値化（エラー値は99へ）
@@ -262,17 +324,17 @@ def assign_race_marks_advanced(final_df, ensemble_df):
         df.at[eligible_indices[1], '印'] = "○ 対抗"
 
     # ------------------------------------------------
-    # 3. ▲ 単穴: 勝率重視
+    # 3. ▲ 単穴: 連対率重視
     # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
     if not remaining.empty:
-        max_win_rate = remaining['win_rate'].max()
-        if max_win_rate > 0:
-            # 勝率最大の馬
-            tan_ana_idx = remaining[remaining['win_rate'] == max_win_rate].index[0]
+        max_rentai_rate = remaining['rentai_rate'].max()
+        if max_rentai_rate > 0:
+            # 連対率最大の馬
+            tan_ana_idx = remaining[remaining['rentai_rate'] == max_rentai_rate].index[0]
             df.at[tan_ana_idx, '印'] = "▲ 単穴"
         else:
-            # 勝率0なら複勝率
+            # 連対率0なら複勝率
             # idxmax()でインデックスを直接取得
             tan_ana_idx = remaining['fukusho_rate'].idxmax()
             df.at[tan_ana_idx, '印'] = "▲ 単穴"
@@ -300,18 +362,18 @@ def assign_race_marks_advanced(final_df, ensemble_df):
             df.at[remaining.index[0], '印'] = "△ ドラマ"
 
     # ------------------------------------------------
-    # 5. ★ ロマン: 一撃の可能性（ここを修正）
+    # 5. ★ ロマン: 馬券に絡む1頭
     # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
     
     if not remaining.empty:
-        # 最高位が1着の馬を探す
-        top_candidates = remaining[remaining['highest_rank'] == 1]
+        # 最高位が3着の馬を探す
+        top_candidates = remaining[remaining['highest_rank'] == 3]
         
         target_idx = None
         
         if not top_candidates.empty:
-            # 最高位1着がいればその先頭
+            # 最高位3着がいればその先頭
             target_idx = top_candidates.index[0]
         else:
             # いなければ複勝率トップ
@@ -365,7 +427,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
     for _, row in cast_df.iterrows():
         tactical_context += (f"【{row['番']}番 {row['馬名']}】"
                              f"枠:{row['枠番']}, 脚質:{row['脚質']}, 先行指数:{row['先行指数']}, "
-                             f"安定度:{row['安定度']}, 中何週：{row['中何週']}週, 成長度：{row['調教成長ポイント']} ")
+                             f"実力のムラ:{row['実力のムラ']}, 中何週：{row['中何週']}週, 成長度：{row['調教成長ポイント']} ")
 
     # 3. キャラデータ (心情やセリフに関係する情報を追加)
     character_context = ""

@@ -62,7 +62,7 @@ def SCENE_Script():
     df = PRISM_RG[['枠番', '番', '馬名', 'PRISM_R_Score', 'G_Avg']].copy()
     
     # 2. 各データを馬名キーで安全に結合
-    df = df.merge(PRISM_R[['馬名', 'EPI', '脚質', '安定度']], on='馬名', how='left')
+    df = df.merge(PRISM_R[['馬名', 'EPI', '脚質', '実力のムラ']], on='馬名', how='left')
     df = df.merge(PRISM_B[['馬名', '中何週']], on='馬名', how='left')
     df = df.merge(PRISM_RGB[['馬名', 'PRISM_B_Score', 'PRISM_RGB_Score']], on='馬名', how='left')
     df = df.merge(SCENE_Attributes_df[['馬名', '性別', '年齢', '勝負服色']], on='馬名', how='left')
@@ -86,7 +86,7 @@ def SCENE_Script():
         try:
             return (
                 f"{int(row['枠番'])}枠({row['枠色']}) {int(row['番'])}番 {row['馬名']} {row['性別']}{int(row['年齢'])}歳, "
-                f"先行指数:{row['先行指数']:.2f}, 脚質：{row['脚質']}, 安定度:{row['安定度']:.2f}, "
+                f"先行指数:{row['先行指数']:.2f}, 脚質：{row['脚質']}, 実力のムラ:{row['実力のムラ']:.2f}, "
                 f"基礎能力:{row['基礎能力']:.2f}, レース条件適合率:{row['レース条件適合率']:.2%}, "
                 f"中{int(row['中何週'])}週, 調教成長ポイント:{row['調教成長ポイント']:.2f}, 最終期待値:{row['最終期待値']:.2f}, 勝負服色:({row['勝負服色']})"
             )

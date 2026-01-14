@@ -298,7 +298,7 @@ def PRISM_R_Analysis(prism_base_df, race_table_df):
             'EPI': epi,
             '脚質': style,
             '年齢': int(current_age),
-            '安定度': round(h_data['最終補正偏差値'].std(), 2) if len(h_data) > 1 else 0.0
+            '実力のムラ': round(h_data['最終補正偏差値'].std(), 2) if len(h_data) > 1 else 0.0
         })
     
     return pd.DataFrame(final_results)
