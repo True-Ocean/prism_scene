@@ -290,7 +290,6 @@ def run_final_aggregation(all_ranks, cast_df):
     return final_df
 
 
-import pandas as pd
 #====================================================
 # 最終結果から馬印を付与する関数
 #====================================================
@@ -310,8 +309,8 @@ def assign_race_marks_advanced(final_df, ensemble_df):
     import pandas as pd
     df['highest_rank'] = pd.to_numeric(df['最高位'], errors='coerce').fillna(99).astype(int)
 
-    # 必須条件：最高位が3着以内
-    mask_eligible = df['highest_rank'] <= 3
+    # 必須条件：最高位が1着
+    mask_eligible = df['highest_rank'] == 1
     df['印'] = ""
 
     # ------------------------------------------------
@@ -362,26 +361,38 @@ def assign_race_marks_advanced(final_df, ensemble_df):
             df.at[remaining.index[0], '印'] = "△ ドラマ"
 
     # ------------------------------------------------
-    # 5. ★ ロマン: 馬券に絡む1頭
+    # 5. ★ ロマン: 複勝率重視
     # ------------------------------------------------
     remaining = df[mask_eligible & (df['印'] == "")]
     
     if not remaining.empty:
-        # 最高位が3着の馬を探す
-        top_candidates = remaining[remaining['highest_rank'] == 3]
-        
-        target_idx = None
-        
-        if not top_candidates.empty:
-            # 最高位3着がいればその先頭
-            target_idx = top_candidates.index[0]
+        max_fukusho_rate = remaining['fukusho_rate'].max()
+        if max_fukusho_rate > 0:
+            # 連対率最大の馬
+            roman_idx = remaining[remaining['fukusho_rate'] == max_rentai_rate].index[0]
+            df.at[roman_idx, '印'] = "★ ロマン"
         else:
-            # いなければ複勝率トップ
-            target_idx = remaining['fukusho_rate'].idxmax()
+            # 連対率0なら複勝率
+            # idxmax()でインデックスを直接取得
+            roman_idx = remaining['rentai_rate'].idxmax()
+            df.at[roman_idx, '印'] = "★ ロマン"
+
+    # if not remaining.empty:
+    #     # 最高位が3着の馬を探す
+    #     top_candidates = remaining[remaining['highest_rank'] == 3]
+        
+    #     target_idx = None
+        
+    #     if not top_candidates.empty:
+    #         # 最高位3着がいればその先頭
+    #         target_idx = top_candidates.index[0]
+    #     else:
+    #         # いなければ複勝率トップ
+    #         target_idx = remaining['fukusho_rate'].idxmax()
             
-        # 【重要】他と同じく .at を使用して書き込む
-        if target_idx is not None:
-            df.at[target_idx, '印'] = "★ ロマン"
+    #     # 【重要】他と同じく .at を使用して書き込む
+    #     if target_idx is not None:
+    #         df.at[target_idx, '印'] = "★ ロマン"
 
     # ------------------------------------------------
     # 6. ☆ ドリーム: 大穴候補
@@ -464,8 +475,9 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
         2. 外なる叫び、会話の書式：【ライバル関係】を反映
         ライバル同士の熱きセリフの応酬を描写してください。
         （例）マスカレードボールがクロワデュノールに迫る。「そのポジションは僕のものだ！」クロワデュノールも応戦する。「上等だ！来るなら来い！」
-        3. 描写の濃淡（重要）:
-        18頭全員のセリフを順番に書く「点呼描写」を【厳禁】とします。
+        3. 口調：各馬のセリフは、【キャラデータ】に示された口調となるようにしてください
+        4. 描写の濃淡（重要）:
+        全員のセリフを順番に書く「点呼描写」を【厳禁】とします。
         【ライバル関係】にある馬同士や【注目キャラ】の心理を深く、長く掘り下げる一方で、他の馬は地の文での位置取り描写のみに留めてください。これにより物語に「主人公」を作ってください。
 
         ■ 文体とクオリティ
@@ -475,7 +487,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
         
         【構成とシーン別指示】
         レースのシーンは{scene_instruction}のみとし、概ね以下の5部構成で執筆してください。
-        【注目キャラ】を念頭に置いた着順となるよう、ストーリを構築してください。
+        【注目キャラ】: {mark_summary}を念頭に置いた着順となるよう、ストーリを構築してください。
         
         ### 1. プロローグ：（レース前の競馬場の描写、緊張感、ゲートインの状況）
         静寂の中に響く蹄の音。観客席のざわめき。馬たちの息遣い。レース前の緊張感を、五感を駆使して描写してください。
@@ -505,7 +517,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
         {mark_summary}
         """
 
-    print(f"{g.race_name}：ファイナル・ストーリー生成中...")
+    print(f"{g.race_name}：ファイナル・ドラマ生成中...")
     
     response = client.models.generate_content(
         model=model,
@@ -516,7 +528,7 @@ def generate_final_drama(cast_df, ensemble_df, final_report, final_mark, client,
         }
     )
     
-    print(Fore.YELLOW + f"{g.race_name}：ファイナル・ストーリー生成完了" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"{g.race_name}：ファイナル・ドラマ生成完了" + Style.RESET_ALL)
     print('')
     
     return response.text
