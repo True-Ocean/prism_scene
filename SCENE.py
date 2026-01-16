@@ -292,7 +292,7 @@ def run_final_aggregation(all_ranks, cast_df):
 
 import pandas as pd
 #====================================================
-# 最終結果から馬印を付与する関数（修正完了版）
+# 最終結果から馬印を付与する関数
 #====================================================
 
 def assign_race_marks_advanced(final_df, ensemble_df):

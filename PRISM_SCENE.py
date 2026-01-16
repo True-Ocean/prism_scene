@@ -113,43 +113,6 @@ print(Fore.YELLOW)
 print('今回のレース情報を取得しました。')
 print(Style.RESET_ALL)
 
-
-#====================================================
-# PRISM_SCENE分析に必要なデータの自動取得
-#====================================================
-
-# pyautoguiによる自動マウス操作でTFJVから全ての必要データを取得
-Data_Getter.Data_Getter()
-
-
-#====================================================
-# 取得したデータの整形・準備
-#====================================================
-
-print(Fore.GREEN)
-print('====================================================')
-print('  PRISM_SCENE分析に必要なデータの整形')
-print('====================================================')
-print(Style.RESET_ALL)
-print('PRISM_SCENE分析に必要なデータを整形しています。')
-
-# 出馬表の取得
-RaceTable_df = Data_Preparation.Race_Table_Preparation()
-# 全出走馬のレース実績データの取得
-HorseRecords_df = Data_Preparation.Horse_Records_Preparation(RaceTable_df)
-# 調教データの取得
-Hanro_df, CW_df = Data_Preparation.Training_Data_Preparation()
-
-# 出走馬の頭数をグローバル変数に格納
-g.hr_num = len(RaceTable_df)
-
-# PRISM分析に必要となる3つの基本DFをPostgreSQLに保存
-RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace', index=False)
-HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace', index=False)
-Hanro_df.to_sql('Hanro', con=engine, if_exists = 'replace', index=False)
-CW_df.to_sql('CW', con=engine, if_exists = 'replace', index=False)
-
-
 # アーカイブフォルダの設定
 race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
 # 作業用フォルダの設定
@@ -158,9 +121,48 @@ work_dir = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/'
 media_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 
 
-print(Fore.YELLOW)
-print('PRISM_SCENE分析に必要なデータの整形が完了しました。')
-print(Style.RESET_ALL)
+#====================================================
+# PRISM_SCENE分析に必要なデータの自動取得
+#====================================================
+
+if g.exe_opt in [1, 2, 6]:
+
+    # pyautoguiによる自動マウス操作でTFJVから全ての必要データを取得
+    Data_Getter.Data_Getter()
+
+
+#====================================================
+# 取得したデータの整形・準備
+#====================================================
+
+if g.exe_opt in [1, 2, 6]:
+
+    print(Fore.GREEN)
+    print('====================================================')
+    print('  PRISM_SCENE分析に必要なデータの整形')
+    print('====================================================')
+    print(Style.RESET_ALL)
+    print('PRISM_SCENE分析に必要なデータを整形しています。')
+
+    # 出馬表の取得
+    RaceTable_df = Data_Preparation.Race_Table_Preparation()
+    # 全出走馬のレース実績データの取得
+    HorseRecords_df = Data_Preparation.Horse_Records_Preparation(RaceTable_df)
+    # 調教データの取得
+    Hanro_df, CW_df = Data_Preparation.Training_Data_Preparation()
+
+    # 出走馬の頭数をグローバル変数に格納
+    g.hr_num = len(RaceTable_df)
+
+    # PRISM分析に必要となる3つの基本DFをPostgreSQLに保存
+    RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace', index=False)
+    HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace', index=False)
+    Hanro_df.to_sql('Hanro', con=engine, if_exists = 'replace', index=False)
+    CW_df.to_sql('CW', con=engine, if_exists = 'replace', index=False)
+
+    print(Fore.YELLOW)
+    print('PRISM_SCENE分析に必要なデータの整形が完了しました。')
+    print(Style.RESET_ALL)
 
 
 #====================================================
@@ -435,10 +437,6 @@ if g.exe_opt in [4, 6]:
         SCENE_Cast_df = pd.read_csv(f'{media_dir}SCENE_Cast.csv', encoding = 'utf-8')
         SCENE_Ensemble_df = pd.read_csv(f'{media_dir}SCENE_Ensemble.csv', encoding = 'utf-8')
 
-
-    # 生成データの保存先フォルダ
-    media_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
-
     # バックグラウンドシミュレーション実行
     all_ranks = SCENE.run_background_simulation_parallel(SCENE_Cast_df, SCENE_Ensemble_df, RaceTable_df, client, MODEL)
 
@@ -448,10 +446,10 @@ if g.exe_opt in [4, 6]:
     final_report.to_csv(f'{media_dir}Final_Report.csv', index=False, encoding="utf-8")
 
     # 馬印の付与
-    final_df_with_marks = SCENE.assign_race_marks_advanced(final_report, SCENE_Ensemble_df)
-    final_df_with_marks = final_df_with_marks[final_df_with_marks['印'] != ""][['印', '枠番', '番', '馬名']]
-    final_df_with_marks.to_sql('FinalMark', con=engine, if_exists = 'replace', index=False)
-    final_df_with_marks.to_csv(f'{media_dir}Final_Mark.csv', index=False, encoding="utf-8")
+    final_mark = SCENE.assign_race_marks_advanced(final_report, SCENE_Ensemble_df)
+    final_mark = final_mark[final_mark['印'] != ""][['印', '枠番', '番', '馬名']]
+    final_mark.to_sql('FinalMark', con=engine, if_exists = 'replace', index=False)
+    final_mark.to_csv(f'{media_dir}Final_Mark.csv', index=False, encoding="utf-8")
 
     # SCENE分析で生成したデータをアーカイブフォルダにコピー
     shutil.copy(f'{media_dir}Final_Report.csv', race_dir)
@@ -480,8 +478,6 @@ if g.exe_opt in [5, 6]:
         final_report = pd.read_csv(f'{media_dir}Final_Report.csv', encoding = 'utf-8')
         final_mark = pd.read_csv(f'{media_dir}Final_Mark.csv', encoding = 'utf-8')
 
-    # 生成データの保存先フォルダ
-    media_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 
     # ファイナル・ドラマ生成
     final_story = SCENE.generate_final_drama(SCENE_Cast_df, SCENE_Ensemble_df, final_report, final_mark, client, MODEL)

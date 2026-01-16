@@ -50,7 +50,7 @@ class RaceInfoApp:
         # アプリウィンドウ設定
         self.app = Tk()
         self.app.attributes('-topmost', True)
-        self.app.title('PRISM SCENE Analysis（プリズム・シーン分析） - ver.2.01')
+        self.app.title('PRISM SCENE Analysis（プリズム・シーン分析） - ver.3.11')
         
         # Windows/Mac両方で見た目を安定させるためのスタイル設定
         self.style = ttk.Style()

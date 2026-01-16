@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import google.genai as genai 
 from dotenv import load_dotenv 
 import os
+import time
 import re
 import random
 import pandas as pd
@@ -215,7 +216,13 @@ def analyze_single_horse(features_text, blood_text, race_info, max_retries=5):
             return data_model.model_dump()
         
         except Exception as e:
-            print(f"Retry {attempt+1}: Error {e}")
+            if "503" in str(e) or "overloaded" in str(e):
+                print(f"  再試行中... {attempt+1}回目")
+                time.sleep(2 + attempt * 2) # 徐々に待ち時間を増やす
+            else:
+                print(f"  エラー: {e}")
+                return None
+
             if attempt == max_retries - 1: return None
 
 
