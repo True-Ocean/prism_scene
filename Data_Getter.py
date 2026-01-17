@@ -317,7 +317,13 @@ def Data_Getter():
         shutil.copy(f'{race_dir}RaceInfo.csv', work_dir)
         shutil.copy(f'{race_dir}RaceTable.csv', work_dir)
         # 出走頭数の取得
-        df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'utf-8')
+        try:
+            # まずはcp932 (Shift_JIS系) で読み込み
+            df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'cp932')
+        except UnicodeDecodeError:
+            # cp932 でエラーが出た場合、utf-8 で読み込み
+            df_race_table = pd.read_csv(f'{work_dir}RaceTable.csv', encoding='utf-8')
+
         g.hr_num = len(df_race_table)
         for i in range(g.hr_num):
             shutil.copy(f'{race_dir}Uma{i+1}.csv', work_dir)
