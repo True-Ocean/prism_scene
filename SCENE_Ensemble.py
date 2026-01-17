@@ -347,6 +347,9 @@ def parse_narrative_json(json_str):
 
 def SCENE_Ensemble_Analysis(horse_records_df):
 
+    # 「日付」列を datetime 型に変換
+    horse_records_df['日付'] = pd.to_datetime(horse_records_df['日付'])
+
     # 日付とレース名の結合
     horse_records_df['Race_Key'] = horse_records_df['日付'].dt.strftime('%Y-%m-%d') + "_" + horse_records_df['場所'] + "_" + horse_records_df['R'].astype(str) + "_" + horse_records_df['レース名']
 

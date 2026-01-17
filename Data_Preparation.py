@@ -37,30 +37,34 @@ engine = create_engine('postgresql://{user}:{password}@{host}:{port}/{database}'
 
 def Race_Table_Preparation ():
 
-    # 出馬表データ（ファイル名：Race_Table.csv）の読み込み。
-    race_table_df = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceTable.csv', encoding = 'cp932')
+    file_path = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceTable.csv'
 
-    # 出走頭数の定数化
-    g.hr_num = len(race_table_df)
+    try:
+        # cp932 (Shift_JIS系) で読み込めた場合、TFJVデータのためデータ整形を実行
+        race_table_df = pd.read_csv(file_path, encoding='cp932')
 
-    # 必要なカラム抽出とカラム名修正
-    race_table_df = race_table_df[['枠番', '番', '  馬名', '性別', '年齢', '騎手', '斤量', '所属', '調教師', ' 馬主', ' 生産者', '毛色']]
-    race_table_df = race_table_df.rename(columns = {'  馬名':'馬名'})
+        # 出走頭数の定数化
+        g.hr_num = len(race_table_df)
 
-    # 欠損値nanを０に置換（主に「増減」）
-    race_table_df = race_table_df.fillna(0)
+        # 必要なカラム抽出とカラム名修正
+        race_table_df = race_table_df[['枠番', '番', '  馬名', '性別', '年齢', '騎手', '斤量', '所属', '調教師', ' 馬主', ' 生産者', '毛色']]
+        race_table_df = race_table_df.rename(columns = {'  馬名':'馬名'})
 
-    # 厩舎の表記を変更（ベクトル化・高速）
-    mapping = {'(栗)': '栗東', '(美)': '美浦', '[地]': '地方', '[外]': '海外'}
-    race_table_df['所属'] = race_table_df['所属'].replace(mapping)
+        # 欠損値nanを０に置換（主に「増減」）
+        race_table_df = race_table_df.fillna(0)
 
-    # 最終データフレーム化
-    RaceTable_df = race_table_df
+        # 厩舎の表記を変更（ベクトル化・高速）
+        mapping = {'(栗)': '栗東', '(美)': '美浦', '[地]': '地方', '[外]': '海外'}
+        race_table_df['所属'] = race_table_df['所属'].replace(mapping)
+
+    except UnicodeDecodeError:
+        # cp932 でエラーが出た場合、utf-8 で既に整形済みのデータを読み込み
+        race_table_df = pd.read_csv(file_path, encoding='utf-8')
 
     # PostgreSQLに上書き保存
-    RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace')
+    race_table_df.to_sql('RaceTable', con=engine, if_exists = 'replace')
     
-    return RaceTable_df
+    return race_table_df
 
 
 #====================================================

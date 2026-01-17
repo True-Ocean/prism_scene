@@ -125,10 +125,8 @@ media_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
 # PRISM_SCENE分析に必要なデータの自動取得
 #====================================================
 
-if g.exe_opt in [1, 2, 6]:
-
-    # pyautoguiによる自動マウス操作でTFJVから全ての必要データを取得
-    Data_Getter.Data_Getter()
+# pyautoguiによる自動マウス操作でTFJVから全ての必要データを取得
+Data_Getter.Data_Getter()
 
 
 #====================================================
@@ -159,6 +157,14 @@ if g.exe_opt in [1, 2, 6]:
     HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace', index=False)
     Hanro_df.to_sql('Hanro', con=engine, if_exists = 'replace', index=False)
     CW_df.to_sql('CW', con=engine, if_exists = 'replace', index=False)
+
+    # SCENE分析に必要となるDFをcsvファイルとして保存
+    RaceTable_df.to_csv(f'{work_dir}RaceTable.csv', index=False, encoding="utf-8")
+    HorseRecords_df.to_csv(f'{work_dir}HorseRecords.csv', index=False, encoding="utf-8")
+
+    # アーカイブフォルダにコピー
+    shutil.copy(f'{work_dir}RaceTable.csv', race_dir)
+    shutil.copy(f'{work_dir}HorseRecords.csv', race_dir)
 
     print(Fore.YELLOW)
     print('PRISM_SCENE分析に必要なデータの整形が完了しました。')
@@ -342,7 +348,16 @@ if g.exe_opt in [3, 6]:
     print(Style.RESET_ALL)
     print('SCENE_Script分析を実行しています。')
 
-    SCENE_Script_df = SCENE_Script.SCENE_Script()
+    # データの読み込み
+    PRISM_R = pd.read_csv(f'{work_dir}PRISM_R.csv', encoding = 'utf-8')
+    PRISM_RG = pd.read_csv(f'{work_dir}PRISM_RG.csv', encoding = 'utf-8')
+    PRISM_B = pd.read_csv(f'{work_dir}PRISM_B.csv', encoding = 'utf-8')
+    PRISM_RGB = pd.read_csv(f'{work_dir}PRISM_RGB.csv', encoding = 'utf-8')
+
+    HorseRecords_df = pd.read_csv(f'{work_dir}HorseRecords.csv', encoding = 'utf-8')
+    RaceTable_df = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'utf-8')
+
+    SCENE_Script_df = SCENE_Script.SCENE_Script(PRISM_R, PRISM_RG, PRISM_B, PRISM_RGB, HorseRecords_df, RaceTable_df)
 
     print(Fore.YELLOW)
     print('SCENE_Script分析が完了しました!')
@@ -363,11 +378,12 @@ if g.exe_opt in [3, 6]:
 
     Race_Info = f'{g.stadium} {g.clas} {g.td} {g.distance}m {g.race_name}'
     SCENE_Cast_df = SCENE_Script_df
+    g.hr_num = len(RaceTable_df)
 
     # HTMLファイルから抽出した血統情報の格納
     blood_info_list = []
     for i in range(g.hr_num):
-        blood_file = f'/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/Blood{(i+1):02d}.html'
+        blood_file = f'{work_dir}Blood{(i+1):02d}.html'
         file_text, used_encoding = SCENE_Cast.read_text_with_fallback(blood_file)
         cleaned_text = SCENE_Cast.clean_html_for_analysis(file_text) 
         blood_info_list.append(cleaned_text)
@@ -433,7 +449,7 @@ if g.exe_opt in [4, 6]:
     if g.exe_opt == 4:
 
         # データフレームの読み込み
-        RaceTable_df = pd.read_sql(sql='SELECT * FROM "RaceTable";', con=engine)
+        RaceTable_df = pd.read_csv(f'{work_dir}RaceTable.csv', encoding = 'utf-8')
         SCENE_Cast_df = pd.read_csv(f'{media_dir}SCENE_Cast.csv', encoding = 'utf-8')
         SCENE_Ensemble_df = pd.read_csv(f'{media_dir}SCENE_Ensemble.csv', encoding = 'utf-8')
 

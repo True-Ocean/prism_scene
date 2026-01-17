@@ -29,23 +29,14 @@ def get_engine():
     }
     return create_engine('postgresql://{user}:{password}@{host}:{port}/{database}'.format(**connection_config))
 
-def SCENE_Script():
+def SCENE_Script(prism_r, prism_rg, prism_b, prism_rgb, horse_records_df, race_table_df):
     engine = get_engine()
 
-    # データの読み込み
-    PRISM_R = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_R.csv', encoding = 'utf-8')
-    PRISM_RG = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RG.csv', encoding = 'utf-8')
-    PRISM_B = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_B.csv', encoding = 'utf-8')
-    PRISM_RGB = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RGB.csv', encoding = 'utf-8')
-
-    HorseRecords_df = pd.read_sql('SELECT * FROM "HorseRecords"', con=engine)
-    RaceTable_df = pd.read_sql('SELECT * FROM "RaceTable"', con=engine)
-
     # 1. 出馬表 (RaceTable_df) から最新の「性別」と「年齢」を取得する
-    current_attributes = RaceTable_df[['馬名', '性別', '年齢']].drop_duplicates(subset=['馬名'])
+    current_attributes = race_table_df[['馬名', '性別', '年齢']].drop_duplicates(subset=['馬名'])
 
     # 2. 実績データ (HorseRecords_df) からは「勝負服色」のみを取得する
-    cloth_colors = HorseRecords_df.sort_values('日付', ascending=False).groupby('馬名').agg({
+    cloth_colors = horse_records_df.sort_values('日付', ascending=False).groupby('馬名').agg({
         '勝負服色': 'first'
     }).reset_index()
 
@@ -59,12 +50,12 @@ def SCENE_Script():
 
     # 1. ベースとなるデータフレームを作成
     # mergeを繰り返して、馬名をキーに全データを統合する（これが最も安全）
-    df = PRISM_RG[['枠番', '番', '馬名', 'PRISM_R_Score', 'G_Avg']].copy()
+    df = prism_rg[['枠番', '番', '馬名', 'PRISM_R_Score', 'G_Avg']].copy()
     
     # 2. 各データを馬名キーで安全に結合
-    df = df.merge(PRISM_R[['馬名', 'EPI', '脚質', '実力のムラ']], on='馬名', how='left')
-    df = df.merge(PRISM_B[['馬名', '中何週']], on='馬名', how='left')
-    df = df.merge(PRISM_RGB[['馬名', 'PRISM_B_Score', 'PRISM_RGB_Score']], on='馬名', how='left')
+    df = df.merge(prism_r[['馬名', 'EPI', '脚質', '実力のムラ']], on='馬名', how='left')
+    df = df.merge(prism_b[['馬名', '中何週']], on='馬名', how='left')
+    df = df.merge(prism_rgb[['馬名', 'PRISM_B_Score', 'PRISM_RGB_Score']], on='馬名', how='left')
     df = df.merge(SCENE_Attributes_df[['馬名', '性別', '年齢', '勝負服色']], on='馬名', how='left')
 
     # 3. カラム名の整理
@@ -106,5 +97,14 @@ def SCENE_Script():
 #====================================================
 
 if __name__ == "__main__":
-    
-    SCENE_Script_df = SCENE_Script()
+
+    # データの読み込み
+    prism_r = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_R.csv', encoding = 'utf-8')
+    prism_rg = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RG.csv', encoding = 'utf-8')
+    prism_b = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_B.csv', encoding = 'utf-8')
+    prism_rgb = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/PRISM_RGB.csv', encoding = 'utf-8')
+
+    horse_records_df = pd.read_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/HorseRecords.csv', encoding = 'utf-8')
+    race_table_df = pd.read_sql('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceTable.csv', encoding = 'utf-8')
+
+    SCENE_Script_df = SCENE_Script(prism_r, prism_rg, prism_b, prism_rgb, horse_records_df, race_table_df)

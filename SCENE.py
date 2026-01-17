@@ -369,7 +369,7 @@ def assign_race_marks_advanced(final_df, ensemble_df):
         max_fukusho_rate = remaining['fukusho_rate'].max()
         if max_fukusho_rate > 0:
             # 連対率最大の馬
-            roman_idx = remaining[remaining['fukusho_rate'] == max_rentai_rate].index[0]
+            roman_idx = remaining[remaining['fukusho_rate'] == max_fukusho_rate].index[0]
             df.at[roman_idx, '印'] = "★ ロマン"
         else:
             # 連対率0なら複勝率
