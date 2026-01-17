@@ -175,12 +175,20 @@ def Training_Data_Preparation():
     df_hanro = df_hanro.rename(columns = {'馬番/仮番(出馬表モード時のみ)':'番'})
     df_hanro['番'] = df_hanro['番'].astype(int)
     df_hanro = df_hanro[['年月日', '時刻', '番','馬名', '性別', '年齢', '調教師','Time1','Time2','Time3','Time4','Lap4','Lap3','Lap2','Lap1']]
+    
+    # すべてのラップが0より大きい行だけを残す
+    lap_cols = ['Lap1', 'Lap2', 'Lap3', 'Lap4']
+    df_hanro = df_hanro[(df_hanro[lap_cols] != 0).all(axis=1)]
 
     # CW調教データの整形
     df_cw = df_cw.rename(columns = {'馬番/仮番(出馬表モード時のみ)':'番'})
     df_cw['番'] = df_cw['番'].astype(int)
     df_cw = df_cw[['年月日', '時刻', '番','馬名', '性別', '年齢', '調教師','所属', '回り', '10F', '9F', '8F', '7F', '6F', '5F', '4F', '3F', '2F', '1F',
                 'Lap9', 'Lap8', 'Lap7', 'Lap6', 'Lap5', 'Lap4', 'Lap3', 'Lap2', 'Lap1',]]
+
+    # Lap6 ~ 1が0より大きい行だけを残す
+    lap_cols = ['Lap1', 'Lap2', 'Lap3', 'Lap4', 'Lap5', 'Lap6']
+    df_cw = df_cw[(df_cw[lap_cols] != 0).all(axis=1)]
 
     return df_hanro, df_cw
 
