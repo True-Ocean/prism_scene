@@ -104,21 +104,21 @@ col = ['日付', '競馬場', 'R番号', '年齢', 'クラス', 'TD', '距離', 
 r_info = [[g.race_date, g.stadium, g.r_num, g.age, g.clas, g.td, g.distance, g.cond, g.race_name]]
 RaceInfo_df = pd.DataFrame(data = r_info, index = ['レース情報'], columns = col)
 
-# csvとして保存
-RaceInfo_df.to_csv('/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/RaceInfo.csv', index=False, encoding="utf-8")
-# PostgreSQLに保存
-RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace', index=False)
-
-print(Fore.YELLOW)
-print('今回のレース情報を取得しました。')
-print(Style.RESET_ALL)
-
 # アーカイブフォルダの設定
 race_dir = '/Users/trueocean/Desktop/PRISM_SCENE/Archive/' + g.race_date + '/' + g.stadium + '/' + g.r_num + '/'
 # 作業用フォルダの設定
 work_dir = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/'
 # メディアフォルダの設定
 media_dir = '/Users/trueocean/Desktop/Python_Code/PRISM_SCENE/Media_files/'
+
+# csvとして保存
+RaceInfo_df.to_csv(f'{work_dir}RaceInfo.csv', index=False, encoding="utf-8")
+# PostgreSQLに保存
+RaceInfo_df.to_sql('RaceInfo', con=engine, if_exists = 'replace', index=False)
+
+print(Fore.YELLOW)
+print('今回のレース情報を取得しました。')
+print(Style.RESET_ALL)
 
 
 #====================================================
