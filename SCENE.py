@@ -695,7 +695,6 @@ async def save_race_audio(text, filename):
 
     if len(parts) == 2:
         print(f"{g.race_name}：レース実況オーディオ生成中...")
-        print('')
         comm1 = edge_tts.Communicate(parts[0], voice_name, rate="+35%", pitch="+2Hz")
         # クライマックスはより高く、情熱的に
         comm2 = edge_tts.Communicate(parts[1], voice_name, rate="+40%", pitch="+8Hz", volume="+20%")
