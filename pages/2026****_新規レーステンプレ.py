@@ -544,6 +544,7 @@ elif sub_menu == "とある世界線のレース実況":
     broadcast = load_text_from_gcs(dir_name, f"{sub_dir_name}/Broadcast.txt")
 
     replace_dict = {
+        "ダート": "ダ",
         "コオナー": "コーナー",
         "メートル": "m",
         "はじける": "弾ける",

@@ -630,6 +630,7 @@ async def save_race_audio(text, filename):
     
     # 読み間違い修正用の辞書（メンテナンス性を高める）
     replace_dict = {
+        "ダ": "ダート",
         "コーナー": "コオナー",
         "m": "メートル",
         "M": "メートル",
