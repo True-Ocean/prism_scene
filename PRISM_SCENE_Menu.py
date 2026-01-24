@@ -155,7 +155,7 @@ class RaceInfoApp:
                     ('4. SCENE分析（レース・シミュレーション）のみ実行', 4), 
                     ('5. PRISM_SCENE分析（物語・レース実況オーディオ生成）のみ実行', 5), 
                     ('6. 全モジュール一括実行', 6),
-                    ('7. レース実況オーディオ再生成（/Media Files/Broadcast.txtから）', 7),
+                    ('7. レース実況オーディオ再生成（ArchiveにあるBroadcast.txtから）', 7),
                     ('8. アクチュアル・ドラマ と アフター・ストーリー生成', 8)]
             for i, (txt, val) in enumerate(opts):
                 ttk.Radiobutton(f3, text=txt, value=val, variable=self.var_exe_opt, command=self.update_scene_state).grid(row=i, column=0, sticky=W, pady=1)

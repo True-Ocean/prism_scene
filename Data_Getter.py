@@ -364,10 +364,8 @@ def Data_Getter():
         
         if g.exe_opt in [7, 8]:
             shutil.copy(f'{race_dir}Final_Drama.txt', media_dir)
-            shutil.copy(f'{race_dir}Broadcast.mp3', media_dir)
-
-        if g.exe_opt == 8:
             shutil.copy(f'{race_dir}Broadcast.txt', media_dir)
+            shutil.copy(f'{race_dir}Broadcast.mp3', media_dir)
 
         print(Fore.YELLOW)
         print('PRISM_SCENE分析に必要なデータをアーカイブフォルダから取得しました。')
