@@ -286,8 +286,8 @@ def PRISM_R_Analysis(prism_base_df, race_table_df):
         elif current_age == 3: expectancy += 0.5
 
         if is_first_time_td:
-            # 今回が初めての芝/ダート転向の場合、スコアを0.95倍
-            expectancy *= 0.95 
+            # 今回が初めての芝/ダート転向の場合、スコアを0.9倍
+            expectancy *= 0.9
 
         final_results.append({
             '馬名': horse,
