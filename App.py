@@ -79,12 +79,11 @@ def load_archive_content(file_name):
 
 # --- 今週のレースを選択・表示する関数 ---
 def show_races():
-    st.title("📚 今週のレース")
+    st.title("📚 今週の注目レース")
     
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
     race_options = {
-        # "選択してください": None,
-        "今週はスペシャルコンテンツからご覧ください": None,
+        "選択してください": None,
         # "2026/2/22 フェブラリーS（G1）": "20260222_フェブラリーS.py", #=============================== ファイル名を変更 =====================================
         }
 
@@ -121,14 +120,14 @@ def show_archives():
 # --- 1. ページの定義 ---
 home_page = st.Page(show_home, title="ホーム", icon="🏠")
 new_page = st.Page(show_new_auth, title="2026/2/22 フェブラリーS", icon="🔥") # タイトルを変更 =================================
-race_page = st.Page(show_races, title="今週の注目レース", icon="🏇")
+# race_page = st.Page(show_races, title="今週の注目レース", icon="🏇")
 archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂") # 1つに統合
 
 # --- 2. ナビゲーションの定義 ---
 pg = st.navigation({
     "PRISM_SCENE": [home_page],
     "スペシャルコンテンツ": [new_page],
-    "フリーコンテンツ": [race_page],
+    # "フリーコンテンツ": [race_page],
     "アーカイブ": [archive_page] # サイドバーには1項目だけ表示される
 })
 
