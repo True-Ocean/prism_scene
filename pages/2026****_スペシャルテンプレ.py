@@ -197,14 +197,14 @@ elif sub_menu == "調教成長度":
 
     selected_training = st.selectbox(
         "調教選択",
-        ["",
+        ["選択してください",
         "CW調教時計",
         "CW調教ラップ",
         "坂路調教時計",
         "坂路調教ラップ"]
     )
 
-    if selected_training == "":
+    if selected_training == "選択してください":
         st.write("見たい調教を選択すると、その調教に関するグラフがここに表示されます。")
 
     elif selected_training == "CW調教時計":
