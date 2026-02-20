@@ -39,8 +39,8 @@ def show_new_auth():
 
         st.divider()
         # 🔑 スペシャルコンテンツの内容を表示
-        with open("pages/20250222_フェブラリーS.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
-            code = compile(f.read(), "pages/20250222_フェブラリーS.py", 'exec')
+        with open("pages/20260222_フェブラリーS.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
+            code = compile(f.read(), "pages/20260222_フェブラリーS.py", 'exec')
             exec(code, globals())
 
     # 3. 未認証の場合：パスコード入力欄を表示
