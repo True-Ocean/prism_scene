@@ -237,6 +237,14 @@ elif sub_menu == "調教成長度":
         with col2:
             display_gcs_image("PRISM_B_CW_Lap.png", "PRISM_B_CW_Lap")
 
+        st.write("")
+        st.divider()
+        st.subheader(f"💡 グラフ解説")
+        st.write(f"このグラフは、CW調教における各馬の6F時計トップ3のラップ推移を示しています。")
+        st.write(f"【横軸】 6Fの各ラップ（Lap6 ~ Lap1）を示します。")
+        st.write(f"【縦軸】 各ラップタイムの時間（秒）を示します。小さくなるほど速いタイムを示します。調教の質が向上している場合、各ラップタイムが短縮される傾向があります。")
+        st.write(f"右下がりのグラフは、終い重点型の調教を示し、特に、Lap2からLap1にかけての急激なタイム短縮は、鋭い末脚を発揮する可能性を示唆します。")
+
     elif selected_training == "坂路調教時計":
         st.write("")
         st.subheader("坂路調教：4F時計推移（過去最大1年間）")
@@ -244,15 +252,6 @@ elif sub_menu == "調教成長度":
         col1, col2, col3 = st.columns([1, 4, 1])
         with col2:
             display_gcs_image("PRISM_B_Hanro_Time.png", "PRISM_B_Hanro_Time")
-
-        st.write("")
-        st.divider()
-        st.subheader(f"💡 グラフ解説")
-        st.write(f"このグラフは、今回のレース前14日間のCW調教における6F時計トップ3のラップ推移を示しています。")
-        st.write(f"【横軸】 6Fの各ラップ（Lap6 ~ Lap1）を示します。")
-        st.write(f"【縦軸】 各ラップタイムの時間（秒）を示します。小さくなるほど速いタイムを示します。調教の質が向上している場合、各ラップタイムが短縮される傾向があります。")
-        st.write(f"右下がりのグラフは、終い重点型の調教を示し、特に、Lap2からLap1にかけての急激なタイム短縮は、鋭い末脚を発揮する可能性を示唆します。")
-
 
         st.write("")
         st.divider()
