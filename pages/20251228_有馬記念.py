@@ -88,9 +88,8 @@ target_files = [
 # Google Cloud Storage のバケット名
 dir_name = "prism_scene_data_storage"
 
-# Google Cloud Storage のバケット名 ================================= ここを書き換え =====================================
-sub_dir_name = "new"
-# sub_dir_name = "archive/20251228_有馬記念"
+# Google Cloud Storage のバケット名
+sub_dir_name = "archive/20251228_有馬記念" # ================================= ここを書き換え =====================================
 
 
 # キャッシュ関数を呼び出し（2回目以降はここが一瞬で終わります）
@@ -104,7 +103,7 @@ with st.sidebar:
     st.header("1. カテゴリ")
     category = st.selectbox(
         "カテゴリ",
-        ["プリズム分析", "シーン分析", "プリズム・シーン", "アフター・シーン"]
+        ["プリズム分析", "シーン分析", "プリズム・シーン"]
     )
 
     st.header("2. サブカテゴリ")
@@ -122,16 +121,12 @@ with st.sidebar:
     elif category == "プリズム・シーン":
         sub_menu = st.selectbox(
             "プリズム・シーンの項目",
-            ["とある世界線の物語", "とある世界線のレース実況"]
+            ["とある世界線の物語", "とある世界線のレース実況", "アフターストーリー"]
         )
-    elif category == "アフター・シーン":
-        sub_menu = st.selectbox(
-            "アフター・シーンの項目",
-            ["現実世界の物語", "後日談"]
-        )
-
 
 # --- メイン画面の表示 ---
+st.title('🐎 2025年12月28日 有馬記念') # ここを変更 =================================================================
+st.divider()
 st.title(f"{category}：{sub_menu}")
 
 # 共通の画像表示用関数（画像が見つからない場合の処理を追加）
@@ -139,7 +134,7 @@ def display_gcs_image(image_key, caption_text):
     if images.get(image_key):
         st.image(images[image_key], caption=caption_text, width="content")
     else:
-        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: {sub_dir_name}'/{image_key}）")
+        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: {sub_dir_name}/{image_key}）")
 
 # --- メインコンテンツの分岐 ---
 if sub_menu == "基礎能力と先行指数":
@@ -450,9 +445,9 @@ elif sub_menu == "シミュレーション結果":
             width="content",
             height=680,
             column_config={
-                "枠": st.column_config.TextColumn("枠番", width=30), # 数値ではなくテキストとして扱うことで左寄せに
-                "番": st.column_config.TextColumn("番", width=30), # 数値ではなくテキストとして扱うことで左寄せに
-                "馬名": st.column_config.TextColumn("馬名", width=180), # 幅を広げて1行に収まりやすくする
+                "枠": st.column_config.TextColumn("枠番", width=30), 
+                "番": st.column_config.TextColumn("番", width=30),
+                "馬名": st.column_config.TextColumn("馬名", width=180),
                 "平均着順": st.column_config.TextColumn("平均着順", width=100),
                 "勝率": st.column_config.TextColumn("勝率", width=100),
                 "連対率": st.column_config.TextColumn("連対率", width=100),
@@ -507,8 +502,8 @@ elif sub_menu == "注目キャラ":
         【 対  抗 】: 平均着順が2番手のキャラ  
         【 単  穴 】: 残ったキャラの中で、勝率が最も高いキャラ  
         【 ドラマ 】: 残ったキャラの中で、最高位が "3着以内" かつ "「ライバル関係」を有する" キャラ  
-        【 ロマン 】: 残ったキャラの中で、最高位が "1着" のキャラ  
-        【ドリーム】: 残ったキャラの中で、最高位が "3着以内" かつ" 最も勝率が低い" キャラ
+        【 ロマン 】: 残ったキャラの中で、最高位が "1着" または 複勝率がトップ のキャラ  
+        【ドリーム】: 残ったキャラの中で、最高位が "3着以内" かつ "最も勝率が低い" キャラ
         """)
 
 
@@ -522,7 +517,7 @@ elif sub_menu == "とある世界線の物語":
     st.write("『とある世界線の物語』をお楽しみください。")
     st.divider()
     final_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Final_Drama.txt")
-    st.text(final_drama)
+    st.markdown(final_drama)
 
     st.divider()
     st.subheader(f"💡 解説")
@@ -549,6 +544,7 @@ elif sub_menu == "とある世界線のレース実況":
     broadcast = load_text_from_gcs(dir_name, f"{sub_dir_name}/Broadcast.txt")
 
     replace_dict = {
+        "ダート": "ダ",
         "コオナー": "コーナー",
         "メートル": "m",
         "はじける": "弾ける",
@@ -556,6 +552,7 @@ elif sub_menu == "とある世界線のレース実況":
         "せんこうば": "先行馬",
         "さいこうほう": "最後方",
         "むこうじょうめん": "向正面",
+        "すうばしん": "数馬身",
         "まえめ": "前目",
         "そとそと": "外々",
         "おおそと": "大外",
@@ -563,53 +560,46 @@ elif sub_menu == "とある世界線のレース実況":
         "すえあし": "末脚",
         "こうスタート": "好スタート", 
         "あしいろ": "脚色", 
+        "せんこうぜい": "先行勢",
         "せんこう": "先行",
         "追い込み": "追込",
         "うち": "内",
         "そと": "外",
+        "あいだ": "間",
         "急ざか": "急坂",
         "18ばん": "18番",
+        "ばぐん": "馬群",
+        "やや": "稍",
         "おも": "重",
+        "こくら": "小倉",
         "ややおも": "稍重",
         "ゴールばん": "ゴール板",
         "ステークス": "S",
+        "クラブカップ": "CC",
         "カップ": "C",
-        "トロフィー": "T" 
+        "トロフィー": "T"
     }
 
     # 一括置換の実行
     for old, new in replace_dict.items():
         broadcast = broadcast.replace(old, new)
 
-    st.write(broadcast)
+    st.text(broadcast)
 
     st.divider()
     st.subheader(f"💡 解説")
     st.write(f"「とある世界線の物語」のレース展開をベースに、純粋なレース実況音声を生成しています。（by Gemini API）")
 
-
-elif sub_menu == "現実世界の物語":
-    st.write("")
-    st.write("")
-    st.write("レース結果を反映した『現実世界の物語』をお楽しみください。")
-    st.divider()
-    actual_drama = load_text_from_gcs(dir_name, f"{sub_dir_name}/Actual_Drama.txt")
-    st.markdown(actual_drama)
-
-    st.divider()
-    st.subheader(f"💡 解説")
-    st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、現実世界の物語を生成しています。（by Gemini API）")
-
-elif sub_menu == "後日談":
+elif sub_menu == "アフターストーリー":
     st.write("")
     st.write("")
     st.write("レース後、とあるシーンで馬同士が再会する後日談をお楽しみください。")
     st.divider()
     after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
     st.markdown(after_story)
-
+    # st.write("準備中")
 
     st.divider()
     st.subheader(f"💡 解説")
-    st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、後日談を生成しています。（by Gemini API）")
+    st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、アフターストーリーを生成しています。（by Gemini API）")
 

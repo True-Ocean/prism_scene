@@ -32,15 +32,15 @@ def show_new_auth():
 
     # 2. 認証済みの場合：分析ページの中身だけを表示
     if st.session_state.authenticated:
-        st.title('🐎 2025年12月28日 有馬記念')# タイトルを変更 =============================================
+        st.title('🐎 2026年2月22日 フェブラリーS')# タイトルを変更 =============================================
         if st.button("ログアウト"):
             st.session_state.authenticated = False
             st.rerun()
 
         st.divider()
         # 🔑 スペシャルコンテンツの内容を表示
-        with open("pages/20251228_有馬記念.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
-            code = compile(f.read(), "pages/20251228_有馬記念.py", 'exec')
+        with open("pages/20250222_フェブラリーS.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
+            code = compile(f.read(), "pages/20250222_フェブラリーS.py", 'exec')
             exec(code, globals())
 
     # 3. 未認証の場合：パスコード入力欄を表示
@@ -83,8 +83,9 @@ def show_races():
     
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
     race_options = {
-        "選択してください": None,
-        "2026/2/22 フェブラリーS（G1）": "20260222_フェブラリーS.py", #=============================== ファイル名を変更 =====================================
+        # "選択してください": None,
+        "今週はスペシャルコンテンツからご覧ください": None,
+        # "2026/2/22 フェブラリーS（G1）": "20260222_フェブラリーS.py", #=============================== ファイル名を変更 =====================================
         }
 
     selected_label = st.selectbox("今週のレースレポートを選択", options=list(race_options.keys()))
@@ -104,6 +105,7 @@ def show_archives():
     archive_options = {
         "選択してください": None,
         "2025/12/27 ホープフルS": "20251227_ホープフルS.py",
+        "2025/12/28 有馬記念": "20251228_有馬記念.py",
         "2025/11/30 ジャパンカップ": "20251130_ジャパンカップ.py"
     }
     
@@ -118,7 +120,7 @@ def show_archives():
 
 # --- 1. ページの定義 ---
 home_page = st.Page(show_home, title="ホーム", icon="🏠")
-new_page = st.Page(show_new_auth, title="2025/12/28 有馬記念", icon="🔥") # タイトルを変更 =================================
+new_page = st.Page(show_new_auth, title="2026/2/22 フェブラリーS", icon="🔥") # タイトルを変更 =================================
 race_page = st.Page(show_races, title="今週の注目レース", icon="🏇")
 archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂") # 1つに統合
 
