@@ -20,6 +20,31 @@ components.html(
 
 # --- 各ページの中身（関数） ---
 def show_home():
+
+    st.markdown("""
+        <style>
+        /* 画面幅が640px以下の時（スマホ）の設定 */
+        @media (max-width: 640px) {
+            /* メインタイトルのサイズ */
+            .main .block-container h1 {
+                font-size: 1.8rem !important;
+            }
+            /* 中見出し（##）のサイズ */
+            .main .block-container h2 {
+                font-size: 1.5rem !important;
+            }
+            /* 小見出し（###）のサイズ */
+            .main .block-container h3 {
+                font-size: 1.2rem !important;
+            }
+            /* 本文のサイズ */
+            .main .block-container p {
+                font-size: 0.9rem !important;
+            }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title('🏠 ようこそ！')
     with open("pages/Home.py", encoding="utf-8") as f:
             code = compile(f.read(), "pages/Home.py", 'exec')
@@ -50,8 +75,8 @@ def show_new_auth():
         
         if st.button("認証する"):
             # 🔐 Secrets からパスコードを読み込んで比較
-            if password == "PS_FebS": # ローカル検証用 Github同期の際には、下の行に切り替えること！ =================================================
-            # if password == st.secrets["APP_PASSCORD"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
+            # if password == "PS_FebS": # ローカル検証用 Github同期の際には、下の行に切り替えること！ =================================================
+            if password == st.secrets["APP_PASSCORD"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
                 st.session_state.authenticated = True
                 st.rerun()
             else:
