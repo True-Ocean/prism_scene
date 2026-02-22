@@ -277,7 +277,7 @@ def show_archives():
 # --- 1. ページの定義 ---
 home_page = st.Page(show_home, title="ホーム", icon="🏠")
 new_page = st.Page(show_new_auth, title="2026/2/22 フェブラリーS", icon="🔥") # タイトルを変更 =================================
-# race_page = st.Page(show_races, title="今週の注目レース", icon="🏇")
+# race_page = st.Page(show_races, title="今週の注目レース", icon="🏇") # G1以外の注目レースがある場合は、この行をアクティブにすること =================================
 archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂") # 1つに統合
 
 # --- 2. ナビゲーションの定義 ---
