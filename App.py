@@ -63,7 +63,39 @@ def show_new_auth():
 
     # 2. 認証済みの場合：分析ページの中身だけを表示
     if st.session_state.authenticated:
+
+        st.markdown("""
+            <style>
+            /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
+            h1 {
+                font-size: 2.0rem !important;
+            }
+            
+            /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
+            @media screen and (max-width: 850px) {
+                /* メインタイトル (st.title) */
+                h1 {
+                    font-size: 1.6rem !important;
+                    line-height: 1.2 !important;
+                }
+                /* 中見出し (st.header / ##) */
+                h2 {
+                    font-size: 1.4rem !important;
+                }
+                /* 小見出し (st.subheader / ###) */
+                h3 {
+                    font-size: 1.2rem !important;
+                }
+                /* 本文やウィジェットのラベル */
+                p, .stText, label {
+                    font-size: 0.9rem !important;
+                }
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
         st.title('🐎 2026年2月22日 フェブラリーS')# タイトルを変更 =============================================
+
         if st.button("ログアウト"):
             st.session_state.authenticated = False
             st.rerun()
@@ -76,6 +108,37 @@ def show_new_auth():
 
     # 3. 未認証の場合：パスコード入力欄を表示
     else:
+
+        st.markdown("""
+            <style>
+            /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
+            h1 {
+                font-size: 2.0rem !important;
+            }
+            
+            /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
+            @media screen and (max-width: 850px) {
+                /* メインタイトル (st.title) */
+                h1 {
+                    font-size: 1.6rem !important;
+                    line-height: 1.2 !important;
+                }
+                /* 中見出し (st.header / ##) */
+                h2 {
+                    font-size: 1.4rem !important;
+                }
+                /* 小見出し (st.subheader / ###) */
+                h3 {
+                    font-size: 1.2rem !important;
+                }
+                /* 本文やウィジェットのラベル */
+                p, .stText, label {
+                    font-size: 0.9rem !important;
+                }
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
         st.title('🔐 パスコード認証')
         password = st.text_input("パスコードを入力してください", type="password")
         
@@ -111,6 +174,37 @@ def load_archive_content(file_name):
 
 # --- 今週のレースを選択・表示する関数 ---
 def show_races():
+
+    st.markdown("""
+        <style>
+        /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
+        h1 {
+            font-size: 2.0rem !important;
+        }
+        
+        /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
+        @media screen and (max-width: 850px) {
+            /* メインタイトル (st.title) */
+            h1 {
+                font-size: 1.6rem !important;
+                line-height: 1.2 !important;
+            }
+            /* 中見出し (st.header / ##) */
+            h2 {
+                font-size: 1.4rem !important;
+            }
+            /* 小見出し (st.subheader / ###) */
+            h3 {
+                font-size: 1.2rem !important;
+            }
+            /* 本文やウィジェットのラベル */
+            p, .stText, label {
+                font-size: 0.9rem !important;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     st.title("📚 今週の注目レース")
     
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
@@ -130,6 +224,37 @@ def show_races():
 
 # --- アーカイブを選択・表示する関数 ---
 def show_archives():
+
+    st.markdown("""
+        <style>
+        /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
+        h1 {
+            font-size: 2.0rem !important;
+        }
+        
+        /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
+        @media screen and (max-width: 850px) {
+            /* メインタイトル (st.title) */
+            h1 {
+                font-size: 1.6rem !important;
+                line-height: 1.2 !important;
+            }
+            /* 中見出し (st.header / ##) */
+            h2 {
+                font-size: 1.4rem !important;
+            }
+            /* 小見出し (st.subheader / ###) */
+            h3 {
+                font-size: 1.2rem !important;
+            }
+            /* 本文やウィジェットのラベル */
+            p, .stText, label {
+                font-size: 0.9rem !important;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     st.title("📚 過去のG1レース")
     
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
