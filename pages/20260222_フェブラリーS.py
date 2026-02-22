@@ -495,7 +495,7 @@ elif sub_menu == "注目キャラ":
         st.write('')
         st.write('全世界線におけるシミュレーションの集計結果をベースに、以下の基準で注目キャラを選出しています。')
         st.markdown("""
-        最高着順1着の馬の中から以下を選定
+        最高着順1着の馬の中から以下を選定  
         【 本  名 】: 平均着順が最も優秀なキャラ  
         【 対  抗 】: 平均着順が2番手のキャラ  
         【 単  穴 】: 残ったキャラの中で、勝率が最も高いキャラ  
@@ -541,7 +541,8 @@ elif sub_menu == "とある世界線のレース実況":
     st.write('')
     broadcast = load_text_from_gcs(dir_name, f"{sub_dir_name}/Broadcast.txt")
 
-    replace_dict = {        "ダート": "ダ",
+    replace_dict = {
+        "ダート": "ダ",
         "コオナー": "コーナー",
         "メートル": "m",
         "はじける": "弾ける",
@@ -581,7 +582,7 @@ elif sub_menu == "とある世界線のレース実況":
     for old, new in replace_dict.items():
         broadcast = broadcast.replace(old, new)
 
-    st.write(broadcast)
+    st.markdown(broadcast)
 
     st.divider()
     st.subheader(f"💡 解説")

@@ -50,7 +50,8 @@ def show_new_auth():
         
         if st.button("認証する"):
             # 🔐 Secrets からパスコードを読み込んで比較
-            if password == st.secrets["APP_PASSCORD"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
+            if password == "PS_FebS": # ローカル検証用 Github同期の際には、下の行に切り替えること！ =================================================
+            # if password == st.secrets["APP_PASSCORD"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
                 st.session_state.authenticated = True
                 st.rerun()
             else:
