@@ -151,7 +151,7 @@ def show_new_auth():
             else:
                 st.error("パスコードが違います。")
         
-        st.write('note の記事内にパスコードを無料公開しています。noteでシャノワールをフォローしていただければ嬉しいです。')
+        st.write('note の記事内にパスコードを無料公開しています。')
         st.write('note のリンク先はこちら 👉 https://note.com/prism_scene')
 
 def show_race_content(file_name):
