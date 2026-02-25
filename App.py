@@ -4,20 +4,6 @@ import streamlit.components.v1 as components
 # 基本設定
 st.set_page_config(page_title="PRISM_SCENE")
 
-# SNS共有用のメタタグ埋め込み
-components.html(
-    """
-    <head>
-        <title>PRISM_SCENE</title>
-        <meta property="og:type" content="website">
-        <meta property="og:url" content="https://prism-scene.streamlit.app">
-        <meta property="og:title" content="PRISM_SCENE">
-        <meta property="og:description" content="プリズム・シーンへようこそ！定量分析レポートから『とある世界線の物語』、レース後の『アフター・ストーリー』まで、競馬コンテンツが満載のプラットフォームです。">
-    </head>
-    """,
-    height=0, # 画面には表示させない
-)
-
 # --- 各ページの中身（関数） ---
 def show_home():
 
