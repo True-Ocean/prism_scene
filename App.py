@@ -272,8 +272,8 @@ archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂")
 pg = st.navigation({
     "PRISM_SCENE": [home_page],
     "スペシャルコンテンツ": [new_page],
-    # "フリーコンテンツ": [race_page],
-    "アーカイブ": [archive_page] # サイドバーには1項目だけ表示される
+    "フリーコンテンツ": [race_page],
+    "アーカイブ": [archive_page]
 })
 
 with st.sidebar:
