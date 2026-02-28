@@ -1,41 +1,30 @@
 import streamlit as st
-import streamlit.components.v1 as components
 
 # 基本設定
 st.set_page_config(page_title="PRISM_SCENE")
 
+# アプリ全体の見出しサイズやモバイル対応を一括管理します
+st.markdown("""
+    <style>
+    /* 1. 全画面共通の見出しサイズ抑制 */
+    h1 { font-size: 2.0rem !important; }
+
+    /* 2. モバイル端末（iPhone等）向けの最適化 */
+    @media screen and (max-width: 850px) {
+        /* メインタイトル (st.title) */
+        h1 { font-size: 1.6rem !important; line-height: 1.2 !important; }
+        /* 中見出し (st.header / ##) */
+        h2 { font-size: 1.4rem !important; }
+        /* 小見出し (st.subheader / ###) */
+        h3 { font-size: 1.2rem !important; }
+        /* 本文やウィジェットのラベル */
+        p, .stText, label { font-size: 0.9rem !important; }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- 各ページの中身（関数） ---
 def show_home():
-
-    st.markdown("""
-        <style>
-        /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
-        h1 {
-            font-size: 2.0rem !important;
-        }
-        
-        /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
-        @media screen and (max-width: 850px) {
-            /* メインタイトル (st.title) */
-            h1 {
-                font-size: 1.6rem !important;
-                line-height: 1.2 !important;
-            }
-            /* 中見出し (st.header / ##) */
-            h2 {
-                font-size: 1.4rem !important;
-            }
-            /* 小見出し (st.subheader / ###) */
-            h3 {
-                font-size: 1.2rem !important;
-            }
-            /* 本文やウィジェットのラベル */
-            p, .stText, label {
-                font-size: 0.9rem !important;
-            }
-        }
-        </style>
-        """, unsafe_allow_html=True)
 
     st.title('🏠 ようこそ！')
     with open("pages/Home.py", encoding="utf-8") as f:
@@ -49,36 +38,6 @@ def show_new_auth():
 
     # 2. 認証済みの場合：分析ページの中身だけを表示
     if st.session_state.authenticated:
-
-        st.markdown("""
-            <style>
-            /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
-            h1 {
-                font-size: 2.0rem !important;
-            }
-            
-            /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
-            @media screen and (max-width: 850px) {
-                /* メインタイトル (st.title) */
-                h1 {
-                    font-size: 1.6rem !important;
-                    line-height: 1.2 !important;
-                }
-                /* 中見出し (st.header / ##) */
-                h2 {
-                    font-size: 1.4rem !important;
-                }
-                /* 小見出し (st.subheader / ###) */
-                h3 {
-                    font-size: 1.2rem !important;
-                }
-                /* 本文やウィジェットのラベル */
-                p, .stText, label {
-                    font-size: 0.9rem !important;
-                }
-            }
-            </style>
-            """, unsafe_allow_html=True)
 
         st.title('🐎 2026年2月22日 フェブラリーS')# タイトルを変更 =============================================
 
@@ -95,43 +54,13 @@ def show_new_auth():
     # 3. 未認証の場合：パスコード入力欄を表示
     else:
 
-        st.markdown("""
-            <style>
-            /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
-            h1 {
-                font-size: 2.0rem !important;
-            }
-            
-            /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
-            @media screen and (max-width: 850px) {
-                /* メインタイトル (st.title) */
-                h1 {
-                    font-size: 1.6rem !important;
-                    line-height: 1.2 !important;
-                }
-                /* 中見出し (st.header / ##) */
-                h2 {
-                    font-size: 1.4rem !important;
-                }
-                /* 小見出し (st.subheader / ###) */
-                h3 {
-                    font-size: 1.2rem !important;
-                }
-                /* 本文やウィジェットのラベル */
-                p, .stText, label {
-                    font-size: 0.9rem !important;
-                }
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
         st.title('🔐 パスコード認証')
         password = st.text_input("パスコードを入力してください", type="password")
         
         if st.button("認証する"):
             # 🔐 Secrets からパスコードを読み込んで比較
             # if password == "PS_FebS": # ローカル検証用 Github同期の際には、下の行に切り替えること！ =================================================
-            if password == st.secrets["APP_PASSCORD"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
+            if password == st.secrets["APP_PASSCODE"]: # Streamlitのウェブ画面右下「Manage app」のメニューから、Setting > Secrets の一番上の記載を変更 ================================
                 st.session_state.authenticated = True
                 st.rerun()
             else:
@@ -161,36 +90,6 @@ def load_archive_content(file_name):
 # --- 今週のレースを選択・表示する関数 ---
 def show_races():
 
-    st.markdown("""
-        <style>
-        /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
-        h1 {
-            font-size: 2.0rem !important;
-        }
-        
-        /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
-        @media screen and (max-width: 850px) {
-            /* メインタイトル (st.title) */
-            h1 {
-                font-size: 1.6rem !important;
-                line-height: 1.2 !important;
-            }
-            /* 中見出し (st.header / ##) */
-            h2 {
-                font-size: 1.4rem !important;
-            }
-            /* 小見出し (st.subheader / ###) */
-            h3 {
-                font-size: 1.2rem !important;
-            }
-            /* 本文やウィジェットのラベル */
-            p, .stText, label {
-                font-size: 0.9rem !important;
-            }
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
     st.title("📚 今週の注目レース")
     
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
@@ -212,36 +111,6 @@ def show_races():
 
 # --- アーカイブを選択・表示する関数 ---
 def show_archives():
-
-    st.markdown("""
-        <style>
-        /* 1. 画面幅に関わらず、すべての大きな見出しを一律で少し抑える設定 */
-        h1 {
-            font-size: 2.0rem !important;
-        }
-        
-        /* 2. iPhone 13 Proを含むモバイル端末向けの設定（判定幅を広げました） */
-        @media screen and (max-width: 850px) {
-            /* メインタイトル (st.title) */
-            h1 {
-                font-size: 1.6rem !important;
-                line-height: 1.2 !important;
-            }
-            /* 中見出し (st.header / ##) */
-            h2 {
-                font-size: 1.4rem !important;
-            }
-            /* 小見出し (st.subheader / ###) */
-            h3 {
-                font-size: 1.2rem !important;
-            }
-            /* 本文やウィジェットのラベル */
-            p, .stText, label {
-                font-size: 0.9rem !important;
-            }
-        }
-        </style>
-        """, unsafe_allow_html=True)
 
     st.title("📚 過去のG1レース")
     
@@ -277,6 +146,6 @@ pg = st.navigation({
 })
 
 with st.sidebar:
-    st.caption("PRISM_SCENE v3.1.2")
+    st.caption("PRISM_SCENE v3.1.3")
 
 pg.run()
