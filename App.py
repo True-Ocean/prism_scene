@@ -39,7 +39,7 @@ def show_new_auth():
     # 2. 認証済みの場合：分析ページの中身だけを表示
     if st.session_state.authenticated:
 
-        st.title('🐎 2026年3月29日 高松宮記念')# タイトルを変更 =============================================
+        st.title('🐎 2026年4月5日 大阪杯')# タイトルを変更 =============================================
 
         if st.button("ログアウト"):
             st.session_state.authenticated = False
@@ -48,7 +48,7 @@ def show_new_auth():
         st.divider()
         # 🔑 スペシャルコンテンツの内容を表示
         with open("pages/20260329_高松宮記念.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
-            code = compile(f.read(), "pages/20260329_高松宮記念.py", 'exec')
+            code = compile(f.read(), "pages/20260405_大阪杯.py", 'exec')
             exec(code, globals())
 
     # 3. 未認証の場合：パスコード入力欄を表示
@@ -117,6 +117,7 @@ def show_archives():
     # ドロップダウンの選択肢を作成（表示名：ファイル名）
     archive_options = {
         "選択してください": None,
+        "2026/3/29 高松宮記念": "20260329_高松宮記念.py",
         "2026/2/22 フェブラリーS": "20260222_フェブラリーS.py",
         "2025/12/27 ホープフルS": "20251227_ホープフルS.py",
         "2025/12/28 有馬記念": "20251228_有馬記念.py",
@@ -134,7 +135,7 @@ def show_archives():
 
 # --- 1. ページの定義 ---
 home_page = st.Page(show_home, title="ホーム", icon="🏠")
-new_page = st.Page(show_new_auth, title="2026/3/29 高松宮記念", icon="🔥") # タイトルを変更 =================================
+new_page = st.Page(show_new_auth, title="2026/4/5 大阪杯", icon="🔥") # タイトルを変更 =================================
 # race_page = st.Page(show_races, title="今週の注目レース", icon="🏇") # G1以外の注目レースがある場合は、この行をアクティブにすること =================================
 archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂") # 1つに統合
 
