@@ -47,7 +47,7 @@ def show_new_auth():
 
         st.divider()
         # 🔑 スペシャルコンテンツの内容を表示
-        with open("pages/20260329_高松宮記念.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
+        with open("pages/20260405_大阪杯.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
             code = compile(f.read(), "pages/20260405_大阪杯.py", 'exec')
             exec(code, globals())
 
