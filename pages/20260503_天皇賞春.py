@@ -626,9 +626,9 @@ elif sub_menu == "アフターストーリー":
     st.write("")
     st.write("レース後、とあるシーンで馬同士が再会する後日談をお楽しみください。")
     st.divider()
-    # after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
-    # st.markdown(after_story)
-    st.write("準備中")
+    after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
+    st.markdown(after_story)
+    # st.write("準備中")
 
     st.divider()
     st.subheader(f"💡 解説")
