@@ -39,7 +39,7 @@ def show_new_auth():
     # 2. 認証済みの場合：分析ページの中身だけを表示
     if st.session_state.authenticated:
 
-        st.title('🐎 2026年5月21日 優駿牝馬')# タイトルを変更 =============================================
+        st.title('🐎 2026年5月24日 優駿牝馬')# タイトルを変更 =============================================
 
         if st.button("ログアウト"):
             st.session_state.authenticated = False
