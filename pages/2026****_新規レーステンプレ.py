@@ -528,12 +528,13 @@ elif sub_menu == "注目キャラ":
         st.write('')
         st.write('全世界線におけるシミュレーションの集計結果をベースに、以下の基準で注目キャラを選出しています。')
         st.markdown("""
+        最高着順1着の馬の中から以下を選定  
         【 本  名 】: 平均着順が最も優秀なキャラ  
         【 対  抗 】: 平均着順が2番手のキャラ  
         【 単  穴 】: 残ったキャラの中で、勝率が最も高いキャラ  
         【 ドラマ 】: 残ったキャラの中で、最高位が "3着以内" かつ "「ライバル関係」を有する" キャラ  
         【 ロマン 】: 残ったキャラの中で、最高位が "1着" または 複勝率がトップ のキャラ  
-        【ドリーム】: 残ったキャラの中で、最高位が "3着以内" かつ "最も勝率が低い" キャラ
+        【ドリーム】: 残ったキャラの中で、最高位が "3着以内" かつ" 最も勝率が低い" キャラ
         """)
 
 
@@ -617,7 +618,7 @@ elif sub_menu == "とある世界線のレース実況":
     for old, new in replace_dict.items():
         broadcast = broadcast.replace(old, new)
 
-    st.text(broadcast)
+    st.markdown(broadcast)
 
     st.divider()
     st.subheader(f"💡 解説")
@@ -628,9 +629,9 @@ elif sub_menu == "アフターストーリー":
     st.write("")
     st.write("レース後、とあるシーンで馬同士が再会する後日談をお楽しみください。")
     st.divider()
-    # after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
-    # st.markdown(after_story)
-    st.write("準備中")
+    after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
+    st.markdown(after_story)
+    # st.write("準備中")
 
     st.divider()
     st.subheader(f"💡 解説")

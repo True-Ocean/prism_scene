@@ -473,9 +473,9 @@ elif sub_menu == "シミュレーション結果":
             width="content",
             height=680,
             column_config={
-                "枠": st.column_config.TextColumn("枠番", width=30), # 数値ではなくテキストとして扱うことで左寄せに
-                "番": st.column_config.TextColumn("番", width=30), # 数値ではなくテキストとして扱うことで左寄せに
-                "馬名": st.column_config.TextColumn("馬名", width=180), # 幅を広げて1行に収まりやすくする
+                "枠": st.column_config.TextColumn("枠番", width=30), 
+                "番": st.column_config.TextColumn("番", width=30), 
+                "馬名": st.column_config.TextColumn("馬名", width=180), 
                 "平均着順": st.column_config.TextColumn("平均着順", width=100),
                 "勝率": st.column_config.TextColumn("勝率", width=100),
                 "連対率": st.column_config.TextColumn("連対率", width=100),
