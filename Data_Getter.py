@@ -88,6 +88,10 @@ if g.mode == 'dual':
         "調教|出力ボタン": (113, -963),
         "ユーザー設定CSV": (222, -937),
         "ウッドC調教一覧": (-53, -896),
+        "傾向検索": (-237, -962),
+        "同コース成績：騎手": (-198, -902),
+        "基本ファイル出力": (-967, -995),
+        "集計・★画面イメージ出力（CSV形式）": (-660, -633),
         "VSCode": (284, 52)
 }
     
@@ -292,6 +296,19 @@ def Data_Getter():
         smart_click('メニューバー|閉じる')
         time.sleep(wait_time * 2)
 
+        # 騎手データ取得
+        print(' 騎手データを取得しています。')
+        smart_click('傾向検索')
+        smart_click('同コース成績：騎手')
+        smart_click('基本ファイル出力')
+        smart_click('集計・★画面イメージ出力（CSV形式）')
+        pgui.typewrite('Jockey.csv')
+        smart_click('ダイアログ|OKボタン')
+        smart_click('小ダイアログ|上書きボタン')
+        time.sleep(wait_time * 2)
+        smart_click('メニューバー|閉じる')
+        time.sleep(wait_time * 2)
+
         # アーカイブフォルダを作成
         os.makedirs(race_dir)
 
@@ -306,7 +323,7 @@ def Data_Getter():
         # 調教データと血統データを作業フォルダーにコピー    
         shutil.copy(f'{work_dir}Hanro.csv', race_dir)
         shutil.copy(f'{work_dir}CW.csv', race_dir)
-
+        shutil.copy(f'{work_dir}Jockey.csv', race_dir)
         print(Fore.YELLOW)
         print('PRISM_SCENE分析に必要な全てのデータをTFJVから取得しました。')
         print(Style.RESET_ALL)
@@ -330,6 +347,7 @@ def Data_Getter():
             shutil.copy(f'{race_dir}Blood{(i+1):02d}.html', work_dir)
         shutil.copy(f'{race_dir}Hanro.csv', work_dir)
         shutil.copy(f'{race_dir}CW.csv', work_dir)
+        shutil.copy(f'{race_dir}Jockey.csv', work_dir)
 
         if g.exe_opt in [3, 4, 5, 7, 8]:
             

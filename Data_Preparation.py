@@ -6,6 +6,7 @@
 
 # ライブラリの準備
 import os
+import re
 import pandas as pd
 # Pandasの未来の仕様変更への警告を抑制
 pd.set_option('future.no_silent_downcasting', True)
@@ -198,7 +199,67 @@ def Training_Data_Preparation():
 
 
 #====================================================
-# 上記の各関数の実行（4つの基本データフレームの取得）
+# 騎手データの取得
+#====================================================
+
+def Jockey_Preparation():
+
+    file_path = '/Users/trueocean/Desktop/PRISM_SCENE/TFJV_Data/Jockey.csv'
+
+    try:
+        df = pd.read_csv(file_path, encoding='cp932')
+    except UnicodeDecodeError:
+        df = pd.read_csv(file_path, encoding='utf-8')
+
+    # 着別度数を分解（例: 28-18- 7-18/71）
+    pattern = re.compile(r'^\s*(\d+)\s*-\s*(\d+)\s*-\s*(\d+)\s*-\s*(\d+)\s*/\s*(\d+)\s*$')
+    chakubetsu_df = df['着別度数'].astype(str).str.extract(pattern)
+    chakubetsu_df.columns = ['1着', '2着', '3着', '着外', '出走数']
+    df = pd.concat([df.drop(columns=['着別度数']), chakubetsu_df], axis=1)
+
+    # パーセント列を数値化
+    pct_cols = ['勝率', '連対率', '複勝率', 'マーク率', '２着率', '３着率']
+    for col in pct_cols:
+        df[col] = (
+            df[col].astype(str)
+            .str.replace('%', '', regex=False)
+            .replace({'nan': '0', '': '0', '-': '0'})
+            .astype(float)
+        )
+
+    # 単位付き列を数値化
+    df['平均着順'] = df['平均着順'].astype(str).str.replace('着', '', regex=False).astype(float)
+    df['平均人気'] = df['平均人気'].astype(str).str.replace('人気', '', regex=False).astype(float)
+
+    # 数値列の型変換（空文字は NaN → 0）
+    numeric_cols = [
+        '順位', '単勝回収値', '複勝回収値', '単勝適正回収値',
+        '平均単勝オッズ', '単勝平均', '複勝平均',
+        'マーク数', '平均タイム', '平均1Fタイム', '平均速度',
+        '1着', '2着', '3着', '着外', '出走数',
+    ]
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    int_cols = ['順位', 'マーク数', '1着', '2着', '3着', '着外', '出走数']
+    df[int_cols] = df[int_cols].astype(int)
+
+    df = df[[
+        '順位', '騎手',
+        '1着', '2着', '3着', '着外', '出走数',
+        '勝率', '連対率', '複勝率', '２着率', '３着率',
+        '単勝回収値', '複勝回収値', '単勝適正回収値',
+        '平均着順', '平均人気', '平均単勝オッズ',
+        '単勝平均', '複勝平均',
+        'マーク数', 'マーク率',
+        '平均タイム', '平均1Fタイム', '平均速度',
+    ]]
+
+    return df
+
+
+#====================================================
+# 上記の各関数の実行（基本データフレームの取得）
 #====================================================
 
 if __name__ == '__main__':
@@ -212,8 +273,12 @@ if __name__ == '__main__':
     # 調教データの取得
     df_hanro, df_cw = Training_Data_Preparation()
 
+    # 騎手データの取得
+    Jockey_df = Jockey_Preparation()
+
     # PRISM分析に必要となるDFをPostgreSQLに保存
     RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace')
     HorseRecords_df.to_sql(f'HorseRecords', con=engine, if_exists = 'replace')
     df_hanro.to_sql('Hanro', con=engine, if_exists = 'replace')
     df_cw.to_sql('CW', con=engine, if_exists = 'replace')
+    Jockey_df.to_sql('Jockey', con=engine, if_exists = 'replace')

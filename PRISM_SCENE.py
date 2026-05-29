@@ -148,15 +148,18 @@ if g.exe_opt in [1, 2, 6]:
     HorseRecords_df = Data_Preparation.Horse_Records_Preparation(RaceTable_df)
     # 調教データの取得
     Hanro_df, CW_df = Data_Preparation.Training_Data_Preparation()
+    # 騎手データの取得
+    Jockey_df = Data_Preparation.Jockey_Preparation()
 
     # 出走馬の頭数をグローバル変数に格納
     g.hr_num = len(RaceTable_df)
 
-    # PRISM分析に必要となる3つの基本DFをPostgreSQLに保存
+    # PRISM分析に必要となる基本DFをPostgreSQLに保存
     RaceTable_df.to_sql('RaceTable', con=engine, if_exists = 'replace', index=False)
     HorseRecords_df.to_sql('HorseRecords', con=engine, if_exists = 'replace', index=False)
     Hanro_df.to_sql('Hanro', con=engine, if_exists = 'replace', index=False)
     CW_df.to_sql('CW', con=engine, if_exists = 'replace', index=False)
+    Jockey_df.to_sql('Jockey', con=engine, if_exists = 'replace', index=False)
 
     # SCENE分析に必要となるDFをcsvファイルとして保存
     RaceTable_df.to_csv(f'{work_dir}RaceTable.csv', index=False, encoding="utf-8")
