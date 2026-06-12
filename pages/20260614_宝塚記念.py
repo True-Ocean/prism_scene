@@ -88,8 +88,8 @@ target_files = [
 # Google Cloud Storage のバケット名
 dir_name = "prism_scene_data_storage"
 
-# Google Cloud Storage のバケット名
-sub_dir_name = "archive/20260607_安田記念" # ================================= ここを書き換え =====================================
+# Google Cloud Storage のバケット名 ================================= ここはこのまま、ファイル名だけを変更すればOK =====================================
+sub_dir_name = "new"
 
 
 # キャッシュ関数を呼び出し（2回目以降はここが一瞬で終わります）
@@ -130,7 +130,7 @@ with st.sidebar:
         }
         </style>
         """, unsafe_allow_html=True)
-
+    
     st.header("1. カテゴリ")
     category = st.selectbox(
         "カテゴリ",
@@ -156,8 +156,6 @@ with st.sidebar:
         )
 
 # --- メイン画面の表示 ---
-st.title('🐎 2026年6月7日 安田記念') # ここを変更 =================================================================
-st.divider()
 st.title(f"{category}：{sub_menu}")
 
 # 共通の画像表示用関数（画像が見つからない場合の処理を追加）
@@ -165,7 +163,7 @@ def display_gcs_image(image_key, caption_text):
     if images.get(image_key):
         st.image(images[image_key], caption=caption_text, width="content")
     else:
-        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: {sub_dir_name}/{image_key}）")
+        st.warning(f"画像 {image_key} がGCS上に見当たりません（パス: {sub_dir_name}'/{image_key}）")
 
 # --- メインコンテンツの分岐 ---
 if sub_menu == "基礎能力と先行指数":
@@ -476,8 +474,8 @@ elif sub_menu == "シミュレーション結果":
             height=680,
             column_config={
                 "枠": st.column_config.TextColumn("枠番", width=30), 
-                "番": st.column_config.TextColumn("番", width=30),
-                "馬名": st.column_config.TextColumn("馬名", width=180),
+                "番": st.column_config.TextColumn("番", width=30), 
+                "馬名": st.column_config.TextColumn("馬名", width=180), 
                 "平均着順": st.column_config.TextColumn("平均着順", width=100),
                 "勝率": st.column_config.TextColumn("勝率", width=100),
                 "連対率": st.column_config.TextColumn("連対率", width=100),
@@ -629,11 +627,12 @@ elif sub_menu == "アフターストーリー":
     st.write("")
     st.write("レース後、とあるシーンで馬同士が再会する後日談をお楽しみください。")
     st.divider()
-    after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
-    st.markdown(after_story)
-    # st.write("準備中")
+    # after_story = load_text_from_gcs(dir_name, f"{sub_dir_name}/After_Story.txt")
+    # st.markdown(after_story)
+    st.write("準備中")
 
     st.divider()
     st.subheader(f"💡 解説")
     st.write(f"レース結果（各コーナー通過順、確定着順）をベースに、各キャラの「キャラ設定」や「ライバル関係」を踏まえて、アフターストーリーを生成しています。（by Gemini API）")
+
 
