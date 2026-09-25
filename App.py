@@ -39,7 +39,7 @@ def show_new_auth():
     # 2. 認証済みの場合：分析ページの中身だけを表示
     if st.session_state.authenticated:
 
-        st.title('🐎 2026年6月14日 宝塚記念')# タイトルを変更 =============================================
+        st.title('🐎 2026年9月27日 スプリンターズS')# タイトルを変更 =============================================
 
         if st.button("ログアウト"):
             st.session_state.authenticated = False
@@ -47,8 +47,8 @@ def show_new_auth():
 
         st.divider()
         # 🔑 スペシャルコンテンツの内容を表示
-        with open("pages/20260614_宝塚記念.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
-            code = compile(f.read(), "pages/20260614_宝塚記念.py", 'exec') # .pyファイル名を指定 =============================================
+        with open("pages/20260927_スプリンターズS.py", encoding="utf-8") as f: # .pyファイル名を指定 =============================================
+            code = compile(f.read(), "pages/20260927_スプリンターズS.py", 'exec') # .pyファイル名を指定 =============================================
             exec(code, globals())
 
     # 3. 未認証の場合：パスコード入力欄を表示
@@ -144,7 +144,7 @@ def show_archives():
 
 # --- 1. ページの定義 ---
 home_page = st.Page(show_home, title="ホーム", icon="🏠")
-new_page = st.Page(show_new_auth, title="2026/6/14 宝塚記念", icon="🔥") # タイトルを変更 =================================
+new_page = st.Page(show_new_auth, title="2026/9/27 スプリンターズS", icon="🔥") # タイトルを変更 =================================
 # race_page = st.Page(show_races, title="今週の注目レース", icon="🏇") # G1以外の注目レースがある場合は、この行をアクティブにすること =================================
 archive_page = st.Page(show_archives, title="過去のG1レース", icon="📂") # 1つに統合
 

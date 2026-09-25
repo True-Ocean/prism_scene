@@ -10,6 +10,7 @@
 #====================================================
 
 # ライブラリの準備
+print('ライブラリを読み込んでいます。初回起動は少し時間がかかることがあります...', flush=True)
 import os
 import pandas as pd
 import numpy as np
